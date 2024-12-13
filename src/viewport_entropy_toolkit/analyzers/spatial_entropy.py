@@ -16,16 +16,16 @@ import logging
 from datetime import datetime
 
 from ..config import AnalyzerConfig, DEFAULT_OUTPUT_FORMATS
-from ..data_utils import (
+from .utilities.data_utils import (
     process_viewport_data,
     format_trajectory_data
 )
-from ..entropy_utils import (
+from .utilities.entropy_utils import (
     generate_fibonacci_lattice,
     compute_spatial_entropy,
     EntropyConfig
 )
-from ..visualization_utils import (
+from .utilities.visualization_utils import (
     PlotManager,
     create_animation,
     save_video
