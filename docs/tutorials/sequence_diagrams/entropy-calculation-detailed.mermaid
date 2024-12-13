@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant Analyzer as SpatialEntropyAnalyzer
+    participant Cache as DataCache
+    participant EntropyUtils as EntropyUtilities
+    participant TileGen as TileGenerator
+    participant VectorOps as VectorOperations
+    participant WeightCalc as WeightCalculator
+    
+    Analyzer->>Analyzer: compute_entropy()
+    activate Analyzer
+    
+    Analyzer->>Cache: get_vectors_data()
+    activate Cache
+    Cache-->>Analyzer: vectors_df
+    deactivate Cache
+    
+    Analyzer->>TileGen: generate_fibonacci_lattice(counts)
+    activate TileGen
+    TileGen-->>Analyzer: tile_centers
+    deactivate TileGen
+    
+    loop For each time step
+        Analyzer->>EntropyUtils: compute_spatial_entropy()
+        activate EntropyUtils
+        
+        EntropyUtils->>VectorOps: calculate_angular_distances()
+        activate VectorOps
+        VectorOps-->>EntropyUtils: distances
+        deactivate VectorOps
+        
+        EntropyUtils->>WeightCalc: calculate_tile_weights()
+        activate WeightCalc
+        WeightCalc->>VectorOps: vector_angle_distance()
+        VectorOps-->>WeightCalc: angles
+        WeightCalc-->>EntropyUtils: weights
+        deactivate WeightCalc
+        
+        EntropyUtils->>EntropyUtils: normalize_entropy()
+        EntropyUtils-->>Analyzer: entropy_results
+        deactivate EntropyUtils
+        
+        Analyzer->>Cache: store_entropy_results()
+        activate Cache
+        Cache-->>Analyzer: results_stored
+        deactivate Cache
+    end
+    
+    Analyzer-->>Client: entropy_calculation_complete
+    deactivate Analyzer

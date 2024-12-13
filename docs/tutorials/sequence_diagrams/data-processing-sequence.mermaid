@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant Client
+    participant Analyzer as SpatialEntropyAnalyzer
+    participant DataUtils as DataUtilities
+    participant Validator as DataValidator
+    participant Reader as FileReader
+    participant Cache as DataCache
+    
+    Client->>Analyzer: process_directory(directory)
+    activate Analyzer
+    
+    Analyzer->>Validator: validate_directory(directory)
+    activate Validator
+    Validator-->>Analyzer: directory_valid
+    deactivate Validator
+    
+    loop For each CSV file
+        Analyzer->>Reader: read_csv(filepath)
+        activate Reader
+        Reader-->>Analyzer: raw_data
+        deactivate Reader
+        
+        Analyzer->>DataUtils: normalize_to_pixel(data)
+        activate DataUtils
+        DataUtils->>Validator: validate_coordinates(coords)
+        Validator-->>DataUtils: coords_valid
+        DataUtils-->>Analyzer: pixel_coordinates
+        deactivate DataUtils
+        
+        Analyzer->>DataUtils: pixel_to_spherical(pixels)
+        activate DataUtils
+        DataUtils->>Validator: validate_dimensions(width, height)
+        Validator-->>DataUtils: dimensions_valid
+        DataUtils-->>Analyzer: spherical_coordinates
+        deactivate DataUtils
+        
+        Analyzer->>DataUtils: format_trajectory(spherical)
+        activate DataUtils
+        DataUtils-->>Analyzer: points_vectors
+        deactivate DataUtils
+        
+        Analyzer->>Cache: store_processed_data(data)
+        activate Cache
+        Cache-->>Analyzer: data_cached
+        deactivate Cache
+    end
+    
+    Analyzer-->>Client: processing_complete
+    deactivate Analyzer

@@ -1,0 +1,62 @@
+sequenceDiagram
+    participant Analyzer as SpatialEntropyAnalyzer
+    participant Cache as DataCache
+    participant PlotMgr as PlotManager
+    participant ColorMapper as ColorMapper
+    participant FrameBuilder as FrameBuilder
+    participant Animator as AnimationCreator
+    participant Writer as VideoWriter
+    
+    Analyzer->>Analyzer: create_visualization(base_name)
+    activate Analyzer
+    
+    Analyzer->>Cache: get_entropy_results()
+    activate Cache
+    Cache-->>Analyzer: entropy_data
+    deactivate Cache
+    
+    Analyzer->>PlotMgr: initialize_plot(config)
+    activate PlotMgr
+    PlotMgr-->>Analyzer: plot_initialized
+    deactivate PlotMgr
+    
+    loop For each time step
+        Analyzer->>FrameBuilder: build_frame(time_index)
+        activate FrameBuilder
+        
+        FrameBuilder->>Cache: get_frame_data(time_index)
+        Cache-->>FrameBuilder: frame_data
+        
+        FrameBuilder->>ColorMapper: map_intensities(weights)
+        activate ColorMapper
+        ColorMapper-->>FrameBuilder: color_map
+        deactivate ColorMapper
+        
+        FrameBuilder->>PlotMgr: plot_frame(data, colors)
+        activate PlotMgr
+        PlotMgr->>PlotMgr: clear_previous()
+        PlotMgr->>PlotMgr: plot_fovs()
+        PlotMgr->>PlotMgr: plot_tiles()
+        PlotMgr->>PlotMgr: update_text()
+        PlotMgr-->>FrameBuilder: frame_plotted
+        deactivate PlotMgr
+        
+        FrameBuilder-->>Analyzer: frame_complete
+        deactivate FrameBuilder
+    end
+    
+    Analyzer->>Animator: create_animation(frames)
+    activate Animator
+    Animator-->>Analyzer: animation
+    deactivate Animator
+    
+    Analyzer->>Writer: save_video(animation, config)
+    activate Writer
+    Writer->>Writer: validate_path()
+    Writer->>Writer: configure_writer()
+    Writer->>Writer: write_frames()
+    Writer-->>Analyzer: video_saved
+    deactivate Writer
+    
+    Analyzer-->>Client: visualization_complete
+    deactivate Analyzer

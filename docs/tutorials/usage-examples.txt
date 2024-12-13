@@ -1,0 +1,233 @@
+# Spatial Entropy Analysis Examples
+
+This document provides examples of how to use the spatial entropy analysis system for analyzing viewport trajectories in 360-degree videos.
+
+## Basic Usage
+
+The simplest way to use the analyzer is with default configurations:
+
+```python
+from pathlib import Path
+from spatial_entropy.analyzers.spatial_entropy import SpatialEntropyAnalyzer
+
+# Create analyzer with default configuration
+analyzer = SpatialEntropyAnalyzer()
+
+# Run analysis on a directory of VCT files
+input_dir = Path("path/to/vct/files")
+analyzer.run_analysis(input_dir, output_prefix="my_analysis")
+```
+
+## Custom Configuration
+
+You can customize the analysis by creating a custom configuration:
+
+```python
+from spatial_entropy.config import AnalyzerConfig, EntropyConfig, VisualizationConfig
+from pathlib import Path
+
+# Create custom configurations
+entropy_config = EntropyConfig(
+    fov_angle=90.0,  # Change FOV angle
+    use_weight_distribution=True,
+    power_factor=1.5
+)
+
+viz_config = VisualizationConfig(
+    figure_size=(15, 8),  # Larger figure
+    fov_point_size=15,
+    tile_point_size=50,
+    fps=30,  # Higher frame rate
+    dpi=150  # Higher resolution
+)
+
+# Create main configuration
+config = AnalyzerConfig(
+    video_width=200,
+    video_height=400,
+    tile_counts=[50, 100, 200],  # Custom tile counts
+    output_dir=Path("custom_output"),
+    entropy_config=entropy_config,
+    visualization_config=viz_config,
+    use_weight_distribution=True
+)
+
+# Create analyzer with custom configuration
+analyzer = SpatialEntropyAnalyzer(config)
+
+# Run analysis
+analyzer.run_analysis(Path("path/to/data"), "custom_analysis")
+```
+
+## Step-by-Step Analysis
+
+You can also run the analysis pipeline step by step:
+
+```python
+from spatial_entropy.analyzers.spatial_entropy import SpatialEntropyAnalyzer
+from pathlib import Path
+
+# Create analyzer
+analyzer = SpatialEntropyAnalyzer()
+
+try:
+    # Process data
+    analyzer.process_directory(Path("path/to/data"))
+    
+    # Compute entropy
+    entropy_results = analyzer.compute_entropy()
+    
+    # Print entropy statistics
+    print(f"Average entropy: {entropy_results['spatial_entropy'].mean():.3f}")
+    print(f"Max entropy: {entropy_results['spatial_entropy'].max():.3f}")
+    print(f"Min entropy: {entropy_results['spatial_entropy'].min():.3f}")
+    
+    # Create visualizations
+    analyzer.create_visualization("detailed_analysis")
+    
+except Exception as e:
+    print(f"Analysis failed: {str(e)}")
+```
+
+## Error Handling
+
+Here's how to handle common errors:
+
+```python
+from spatial_entropy.analyzers.spatial_entropy import SpatialEntropyAnalyzer
+from spatial_entropy.data_types import ValidationError
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+
+try:
+    analyzer = SpatialEntropyAnalyzer()
+    
+    # Try to process a directory
+    try:
+        analyzer.process_directory(Path("nonexistent/directory"))
+    except FileNotFoundError:
+        print("Directory not found, using backup directory")
+        analyzer.process_directory(Path("backup/directory"))
+    except ValidationError as e:
+        print(f"Data validation failed: {str(e)}")
+        raise
+        
+    # Try to compute entropy
+    try:
+        entropy_results = analyzer.compute_entropy()
+    except ValidationError:
+        print("No data available for entropy computation")
+        raise
+        
+    # Try to create visualization
+    try:
+        analyzer.create_visualization("analysis_results")
+    except RuntimeError as e:
+        print(f"Visualization failed: {str(e)}")
+        # Continue without visualization
+        
+except Exception as e:
+    logging.error(f"Analysis pipeline failed: {str(e)}")
+```
+
+## Working with Results
+
+Example of how to work with the analysis results:
+
+```python
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Run analysis and get results
+analyzer = SpatialEntropyAnalyzer()
+analyzer.process_directory(Path("path/to/data"))
+results = analyzer.compute_entropy()
+
+# Create custom visualization of entropy over time
+plt.figure(figsize=(12, 6))
+plt.plot(results['time'], results['spatial_entropy'], marker='o')
+plt.xlabel('Time (s)')
+plt.ylabel('Spatial Entropy')
+plt.title('Spatial Entropy Over Time')
+plt.grid(True)
+plt.savefig('custom_entropy_plot.png')
+plt.close()
+
+# Export results to CSV
+results[['time', 'spatial_entropy']].to_csv('entropy_results.csv', index=False)
+
+# Analyze temporal patterns
+time_windows = pd.cut(results['time'], bins=10)
+window_stats = results.groupby(time_windows)['spatial_entropy'].agg(['mean', 'std'])
+print("\nTemporal Analysis:")
+print(window_stats)
+```
+
+## Batch Processing
+
+Example of processing multiple directories:
+
+```python
+from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor
+import logging
+
+def process_directory(directory: Path, output_prefix: str) -> None:
+    """Process a single directory."""
+    try:
+        analyzer = SpatialEntropyAnalyzer()
+        analyzer.run_analysis(directory, output_prefix)
+    except Exception as e:
+        logging.error(f"Failed to process {directory}: {str(e)}")
+
+# List of directories to process
+directories = [
+    Path("data/video1"),
+    Path("data/video2"),
+    Path("data/video3")
+]
+
+# Process directories in parallel
+with ProcessPoolExecutor() as executor:
+    futures = [
+        executor.submit(process_directory, dir_path, f"batch_{i}")
+        for i, dir_path in enumerate(directories)
+    ]
+    
+    # Wait for all to complete
+    for future in futures:
+        try:
+            future.result()
+        except Exception as e:
+            logging.error(f"Batch processing error: {str(e)}")
+```
+
+## Configuration Reference
+
+Here's a quick reference of all configuration options:
+
+```python
+# Video dimensions
+video_width: int  # Width of the video in pixels
+video_height: int  # Height of the video in pixels
+
+# Tile configuration
+tile_counts: List[int]  # Number of tiles for different scales
+
+# Entropy configuration
+fov_angle: float  # Field of view angle in degrees
+use_weight_distribution: bool  # Whether to use weighted distribution
+power_factor: float  # Power factor for weight calculation
+
+# Visualization configuration
+figure_size: Tuple[int, int]  # Size of the figure in inches
+fov_point_size: int  # Size of FOV points in scatter plot
+tile_point_size: int  # Size of tile points in scatter plot
+fps: int  # Frames per second for video output
+dpi: int  # DPI for video output
+
+# Output configuration
+output_dir: Path  # Directory for output files
+```

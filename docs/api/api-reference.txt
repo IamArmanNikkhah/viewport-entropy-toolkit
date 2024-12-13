@@ -1,0 +1,333 @@
+# Spatial Entropy Analysis API Reference
+
+## Table of Contents
+1. [Data Types Module](#data-types-module)
+2. [Data Utilities Module](#data-utilities-module)
+3. [Entropy Utilities Module](#entropy-utilities-module)
+4. [Visualization Utilities Module](#visualization-utilities-module)
+5. [Configuration Module](#configuration-module)
+6. [Spatial Entropy Analyzer Module](#spatial-entropy-analyzer-module)
+
+## Data Types Module
+`spatial_entropy.data_types`
+
+### Classes
+
+#### SpatialError
+Base exception class for spatial-related errors.
+
+#### ValidationError
+Exception raised when spatial data validation fails.
+
+#### Point
+```python
+@dataclass(frozen=True)
+class Point:
+    """Represents a point in pixel coordinates."""
+    pixel_x: int
+    pixel_y: int
+    
+    def as_tuple() -> Tuple[int, int]:
+        """Returns coordinates as (x, y) tuple."""
+```
+
+#### RadialPoint
+```python
+@dataclass(frozen=True)
+class RadialPoint:
+    """Represents a point in spherical coordinates."""
+    lon: float  # [-180, 180]
+    lat: float  # [-90, 90]
+    
+    def normalize_coordinates() -> 'RadialPoint':
+        """Returns a new RadialPoint with normalized coordinates."""
+    
+    def as_tuple() -> Tuple[float, float]:
+        """Returns coordinates as (longitude, latitude) tuple."""
+```
+
+#### Vector
+```python
+@dataclass(frozen=True)
+class Vector:
+    """Represents a point in 3D Cartesian coordinates."""
+    x: float
+    y: float
+    z: float
+    
+    def length() -> float:
+        """Calculates vector length."""
+    
+    def normalize() -> 'Vector':
+        """Returns normalized vector."""
+    
+    def dot_product(other: 'Vector') -> float:
+        """Computes dot product with another vector."""
+    
+    def as_tuple() -> Tuple[float, float, float]:
+        """Returns coordinates as (x, y, z) tuple."""
+    
+    @classmethod
+    def from_spherical(cls, lon: float, lat: float) -> 'Vector':
+        """Creates vector from spherical coordinates."""
+```
+
+## Data Utilities Module
+`spatial_entropy.data_utils`
+
+### Functions
+
+#### validate_video_dimensions
+```python
+def validate_video_dimensions(width: int, height: int) -> None:
+    """Validates video dimensions."""
+```
+
+#### normalize_to_pixel
+```python
+def normalize_to_pixel(normalized: np.ndarray, dimension: int) -> np.ndarray:
+    """Converts normalized coordinates to pixel coordinates."""
+```
+
+#### pixel_to_spherical
+```python
+def pixel_to_spherical(
+    point: Point,
+    video_width: int,
+    video_height: int
+) -> RadialPoint:
+    """Converts pixel coordinates to spherical coordinates."""
+```
+
+#### process_viewport_data
+```python
+def process_viewport_data(
+    filepath: Union[str, Path],
+    video_width: int,
+    video_height: int
+) -> Tuple[pd.DataFrame, str]:
+    """Processes viewport center trajectory data."""
+```
+
+#### format_trajectory_data
+```python
+def format_trajectory_data(
+    trajectory_data: List[Tuple[str, pd.DataFrame]]
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Formats trajectory data for analysis."""
+```
+
+## Entropy Utilities Module
+`spatial_entropy.entropy_utils`
+
+### Classes
+
+#### EntropyConfig
+```python
+@dataclass
+class EntropyConfig:
+    """Configuration for entropy calculations."""
+    fov_angle: float = 120.0
+    use_weight_distribution: bool = True
+    power_factor: float = 2.0
+```
+
+### Functions
+
+#### vector_angle_distance
+```python
+def vector_angle_distance(v1: Vector, v2: Vector) -> float:
+    """Computes angle between vectors in radians."""
+```
+
+#### find_angular_distances
+```python
+def find_angular_distances(
+    vector: Vector,
+    tile_centers: List[Vector]
+) -> np.ndarray:
+    """Finds angular distances between vector and tile centers."""
+```
+
+#### generate_fibonacci_lattice
+```python
+def generate_fibonacci_lattice(num_points: int) -> List[Vector]:
+    """Generates Fibonacci lattice points on sphere."""
+```
+
+#### calculate_tile_weights
+```python
+def calculate_tile_weights(
+    vector: Vector,
+    tile_centers: List[Vector],
+    config: EntropyConfig
+) -> Dict[Vector, float]:
+    """Calculates weight distribution across tiles."""
+```
+
+#### compute_spatial_entropy
+```python
+def compute_spatial_entropy(
+    vector_dict: Dict[str, Vector],
+    tile_centers: List[Vector],
+    config: EntropyConfig
+) -> Tuple[float, Dict[Vector, float], Dict[str, int]]:
+    """Computes spatial entropy for set of vectors."""
+```
+
+## Visualization Utilities Module
+`spatial_entropy.visualization_utils`
+
+### Classes
+
+#### VisualizationConfig
+```python
+@dataclass
+class VisualizationConfig:
+    """Configuration for visualization parameters."""
+    figure_size: Tuple[int, int] = (12, 6)
+    fov_point_size: int = 10
+    tile_point_size: int = 40
+    fps: int = 10
+    dpi: int = 100
+```
+
+#### PlotManager
+```python
+class PlotManager:
+    """Manages plot creation and updates."""
+    
+    def __init__(self, config: Optional[VisualizationConfig] = None):
+        """Initializes plot manager."""
+    
+    def update_frame(
+        self,
+        time_index: int,
+        points_data: pd.DataFrame,
+        tile_centers: np.ndarray,
+        tile_weights: Dict[Vector, float],
+        entropy_data: pd.DataFrame
+    ) -> List[Any]:
+        """Updates plot for animation frame."""
+```
+
+### Functions
+
+#### create_animation
+```python
+def create_animation(
+    plot_manager: PlotManager,
+    points_data: pd.DataFrame,
+    tile_centers: np.ndarray,
+    tile_weights: Dict[int, Dict[Vector, float]],
+    entropy_data: pd.DataFrame
+) -> FuncAnimation:
+    """Creates animation of spatial entropy visualization."""
+```
+
+#### save_video
+```python
+def save_video(
+    animation: FuncAnimation,
+    output_path: Path,
+    config: Optional[VisualizationConfig] = None
+) -> None:
+    """Saves animation as video file."""
+```
+
+## Configuration Module
+`spatial_entropy.config`
+
+### Constants
+
+```python
+DEFAULT_VIDEO_DIMENSIONS: Dict[str, int]
+DEFAULT_TILE_COUNTS: List[int]
+DEFAULT_OUTPUT_FORMATS: Dict[str, str]
+```
+
+### Classes
+
+#### AnalyzerConfig
+```python
+@dataclass
+class AnalyzerConfig:
+    """Configuration for spatial entropy analysis."""
+    video_width: int = DEFAULT_VIDEO_DIMENSIONS['width']
+    video_height: int = DEFAULT_VIDEO_DIMENSIONS['height']
+    tile_counts: List[int] = field(default_factory=lambda: DEFAULT_TILE_COUNTS)
+    output_dir: Path = Path('output')
+    entropy_config: EntropyConfig = field(default_factory=EntropyConfig)
+    visualization_config: VisualizationConfig = field(
+        default_factory=VisualizationConfig
+    )
+    use_weight_distribution: bool = True
+    
+    def get_output_path(self, base_name: str, extension: str) -> Path:
+        """Generates output file path."""
+```
+
+## Spatial Entropy Analyzer Module
+`spatial_entropy.analyzers.spatial_entropy`
+
+### Classes
+
+#### SpatialEntropyAnalyzer
+```python
+class SpatialEntropyAnalyzer:
+    """Analyzer for computing spatial entropy in viewport trajectories."""
+    
+    def __init__(self, config: Optional[AnalyzerConfig] = None):
+        """Initializes analyzer with optional configuration."""
+    
+    def process_directory(self, directory: Path) -> None:
+        """Processes all VCT files in directory."""
+    
+    def compute_entropy(self) -> pd.DataFrame:
+        """Computes spatial entropy for processed data."""
+    
+    def create_visualization(self, base_name: str) -> None:
+        """Creates and saves visualization outputs."""
+    
+    def run_analysis(
+        self,
+        directory: Path,
+        output_prefix: str = ""
+    ) -> None:
+        """Runs complete analysis pipeline."""
+```
+
+## Usage Example
+
+Here's a complete example showing how the various components work together:
+
+```python
+from spatial_entropy.analyzers.spatial_entropy import SpatialEntropyAnalyzer
+from spatial_entropy.config import AnalyzerConfig, EntropyConfig
+from pathlib import Path
+
+# Create custom configuration
+config = AnalyzerConfig(
+    video_width=200,
+    video_height=400,
+    tile_counts=[50, 100, 200],
+    entropy_config=EntropyConfig(
+        fov_angle=90.0,
+        use_weight_distribution=True
+    )
+)
+
+# Create analyzer
+analyzer = SpatialEntropyAnalyzer(config)
+
+# Run analysis
+try:
+    analyzer.run_analysis(
+        directory=Path("data/video1"),
+        output_prefix="analysis"
+    )
+except Exception as e:
+    print(f"Analysis failed: {str(e)}")
+```
+
+This API reference provides a comprehensive overview of all modules, classes, and functions in the spatial entropy analysis system. Each component is documented with its parameters, return types, and basic usage examples.
