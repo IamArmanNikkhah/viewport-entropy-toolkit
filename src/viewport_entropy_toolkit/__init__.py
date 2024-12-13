@@ -7,6 +7,7 @@ It includes functionality for data processing, entropy calculation, and visualiz
 from .data_types import Point, RadialPoint, Vector, ValidationError, SpatialError
 from .config import AnalyzerConfig, DEFAULT_VIDEO_DIMENSIONS, DEFAULT_TILE_COUNTS
 from analyzers import SpatialEntropyAnalyzer
+import utilities
 
 __version__ = "1.0.0"
 __author__ = "Prakash Lab"
