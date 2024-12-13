@@ -1,7 +1,7 @@
 """Tests for spatial entropy analyzer."""
 
 import pytest
-from viewport_entropy_toolkit.utilities.data_types import Point, RadialPoint, Vector
+from viewport_entropy_toolkit.data_types import Point, RadialPoint, Vector
 from viewport_entropy_toolkit.analyzers.spatial_entropy import SpatialEntropyAnalyzer
 
 def test_point_creation():
