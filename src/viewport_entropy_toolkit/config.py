@@ -16,8 +16,7 @@ from dataclasses import dataclass, field
 from typing import List, Tuple, Dict
 from pathlib import Path
 
-from .entropy_utils import EntropyConfig
-from .visualization_utils import VisualizationConfig
+from utilities import EntropyConfig, VisualizationConfig
 
 
 # Default video dimensions

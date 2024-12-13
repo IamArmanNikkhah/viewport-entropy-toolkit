@@ -15,7 +15,7 @@ from typing import Dict, List, Tuple, Optional
 import numpy as np
 from dataclasses import dataclass
 
-from .data_types import Vector, ValidationError
+from viewport_entropy_toolkit import Vector, ValidationError
 
 
 @dataclass

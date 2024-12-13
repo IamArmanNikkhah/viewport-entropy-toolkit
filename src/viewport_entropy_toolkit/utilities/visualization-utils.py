@@ -24,7 +24,7 @@ from matplotlib.axes import Axes
 from pathlib import Path
 from dataclasses import dataclass
 
-from .data_types import Vector, RadialPoint, ValidationError
+from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError
 
 
 @dataclass

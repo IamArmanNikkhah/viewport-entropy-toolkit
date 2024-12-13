@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from .data_types import Point, RadialPoint, Vector, ValidationError
+from viewport_entropy_toolkit import Point, RadialPoint, Vector, ValidationError
 
 
 def validate_video_dimensions(width: int, height: int) -> None:
