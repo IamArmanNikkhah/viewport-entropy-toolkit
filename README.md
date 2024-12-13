@@ -199,9 +199,9 @@ If you use this software in your research, please cite:
 ```bibtex
 @software{spatial_entropy,
   title = {Spatial Entropy Analysis},
-  author = {Your Name},
+  author = {Arman Nik Khah, Chitsein Htun},
   year = {2024},
-  url = {https://github.com/yourusername/spatial-entropy}
+  url = {https://github.com/IamArmanNikkhah/viewport-entropy-toolkit}
 }
 ```
 
@@ -209,7 +209,7 @@ If you use this software in your research, please cite:
 
 For questions and support:
 - Create an issue on GitHub
-- Email: your.email@example.com
+- Email: rmnnikkhah@gmail.com
 
 ## Acknowledgments
 
