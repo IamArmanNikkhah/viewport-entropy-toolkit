@@ -1,0 +1,11 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sphere"
+version = "0.1.0"
+description = "Spatial Perception Heatmap Entropy Research Environment"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
