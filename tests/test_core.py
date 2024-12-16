@@ -25,6 +25,9 @@ def test_vector_creation():
 
 def test_analyzer_initialization():
     """Test SpatialEntropyAnalyzer initialization."""
-    analyzer = SpatialEntropyAnalyzer(video_width=100, video_height=200)
-    assert analyzer.video_width == 100
-    assert analyzer.video_height == 200
+    analyzer = SpatialEntropyAnalyzer(config=AnalyzerConfig(
+        video_width=100,
+        video_height=200
+    ))
+    assert analyzer.config.video_width == 100
+    assert analyzer.config.video_height == 200
