@@ -3,6 +3,7 @@
 import pytest
 from viewport_entropy_toolkit.data_types import Point, RadialPoint, Vector
 from viewport_entropy_toolkit.analyzers.spatial_entropy import SpatialEntropyAnalyzer
+from viewport_entropy_toolkit.config import AnalyzerConfig
 
 def test_point_creation():
     """Test Point class creation."""
