@@ -226,24 +226,31 @@ def calculate_tile_weights(
     return weights
 
 
+
 def compute_spatial_entropy(
     vector_dict: Dict[str, Vector],
     tile_centers: List[Vector],
     config: EntropyConfig
 ) -> Tuple[float, Dict[Vector, float], Dict[str, int]]:
-    """Computes spatial entropy for a set of vectors.
-    
+    """Computes spatial entropy for a set of vectors using fixation counts and Gaussian smoothing.
+
+    The computation follows these steps:
+    1. Count fixations per tile (N(i,j))
+    2. Calculate initial probabilities p(i,j) = N(i,j)/N_total
+    3. Apply Gaussian smoothing to probabilities
+    4. Calculate entropy from smoothed distribution
+
     Args:
         vector_dict: Dictionary mapping identifiers to vectors.
         tile_centers: List of tile center vectors.
         config: Entropy calculation configuration.
-    
+
     Returns:
         Tuple containing:
         - float: Normalized spatial entropy.
-        - Dict[Vector, float]: Tile weight distribution.
+        - Dict[Vector, float]: Smoothed probability distribution.
         - Dict[str, int]: Tile assignments for each vector.
-    
+
     Raises:
         ValidationError: If input data is invalid.
     """
@@ -251,43 +258,73 @@ def compute_spatial_entropy(
         raise ValidationError("Empty vector dictionary")
     if not tile_centers:
         raise ValidationError("No tile centers provided")
-    
-    num_tiles = len(tile_centers)
-    weight_per_tile: Dict[Vector, float] = {}
-    total_weight = 0.0
+
+    # Initialize counts and assignments
+    fixation_counts: Dict[Vector, int] = {tile: 0 for tile in tile_centers}
     tile_assignments: Dict[str, int] = {}
-    
-    # Calculate weights for each vector
+    n_total = 0
+
+    # Count fixations per tile
     for identifier, vector in vector_dict.items():
         if vector is None:
             continue
-            
-        weights = calculate_tile_weights(vector, tile_centers, config)
-        
-        # Record tile assignment (nearest tile)
+
+        # Find nearest tile for this fixation
         distances = find_angular_distances(vector, tile_centers)
-        tile_assignments[identifier] = int(distances[np.argmin(distances[:, 1])][0])
-        
-        # Accumulate weights
-        for tile, weight in weights.items():
-            weight_per_tile[tile] = weight_per_tile.get(tile, 0.0) + weight
-            total_weight += weight
-    
-    # Calculate entropy
-    spatial_entropy = 0.0
-    for weight in weight_per_tile.values():
-        proportion = weight / total_weight
-        spatial_entropy -= proportion * np.log2(proportion)
-    
-    # Calculate maximum possible entropy
-    if config.use_weight_distribution or total_weight > num_tiles:
-        max_proportion = 1.0 / num_tiles
-        max_entropy = -num_tiles * max_proportion * np.log2(max_proportion)
+        nearest_idx = int(distances[np.argmin(distances[:, 1])][0])
+        nearest_tile = tile_centers[nearest_idx]
+
+        # Record assignment and increment count
+        tile_assignments[identifier] = nearest_idx
+        fixation_counts[nearest_tile] += 1
+        n_total += 1
+
+    if n_total == 0:
+        raise ValidationError("No valid fixations found")
+
+    # Calculate initial probabilities
+    initial_probabilities: Dict[Vector, float] = {
+        tile: count/n_total
+        for tile, count in fixation_counts.items()
+    }
+
+    # Apply Gaussian smoothing to probabilities if enabled
+    smoothed_probabilities: Dict[Vector, float] = {}
+    if config.use_weight_distribution:
+        for target_tile in tile_centers:
+            smoothed_prob = 0.0
+            for source_tile, prob in initial_probabilities.items():
+                # Calculate distance between tiles
+                distance = vector_angle_distance(target_tile, source_tile)
+                # Apply Gaussian weight
+                weight = _calculate_gaussian_weight(
+                    distance=distance,
+                    sigma=config.sigma,
+                    use_normalization=config.use_gaussian_normalization
+                )
+                smoothed_prob += prob * weight
+            smoothed_probabilities[target_tile] = smoothed_prob
     else:
-        max_proportion = 1.0 / total_weight
-        max_entropy = -total_weight * max_proportion * np.log2(max_proportion)
-    
+        smoothed_probabilities = initial_probabilities
+
+    # Normalize smoothed probabilities
+    total_prob = sum(smoothed_probabilities.values())
+    if total_prob > 0:
+        for tile in smoothed_probabilities:
+            smoothed_probabilities[tile] /= total_prob
+
+    # Calculate entropy from smoothed probabilities
+    spatial_entropy = 0.0
+    for prob in smoothed_probabilities.values():
+        if prob > 0:  # Avoid log(0)
+            spatial_entropy -= prob * np.log2(prob)
+
+    # Calculate maximum possible entropy
+    num_tiles = len(tile_centers)
+    max_proportion = 1.0 / num_tiles
+    max_entropy = -num_tiles * max_proportion * np.log2(max_proportion)
+
     # Normalize entropy
-    normalized_entropy = spatial_entropy / max_entropy
-    
-    return normalized_entropy, weight_per_tile, tile_assignments
+    normalized_entropy = spatial_entropy / max_entropy if max_entropy > 0 else 0.0
+
+    return normalized_entropy, smoothed_probabilities, tile_assignments
