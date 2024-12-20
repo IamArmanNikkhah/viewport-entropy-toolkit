@@ -13,7 +13,7 @@ Classes:
 """
 
 from dataclasses import dataclass
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 import numpy as np
 
 
@@ -206,3 +206,63 @@ class Vector:
             y=float(round(y, 6)),
             z=float(round(z, 6))
         )
+
+
+def convert_vectors_to_coordinates(
+    vectors: Union[List[Vector], np.ndarray]
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Converts a collection of vectors to plottable coordinates.
+    
+    This function takes a list or array of Vector objects and converts them 
+    to longitude and latitude coordinates suitable for plotting. It handles
+    both single vectors and collections of vectors.
+    
+    Args:
+        vectors: List or array of Vector objects to convert.
+            
+    Returns:
+        Tuple containing:
+        - np.ndarray: Array of longitude coordinates
+        - np.ndarray: Array of latitude coordinates
+            
+    Raises:
+        ValidationError: If input is empty or contains invalid vectors.
+        
+    Example:
+        >>> vectors = [Vector(1, 0, 0), Vector(0, 1, 0)]
+        >>> lons, lats = convert_vectors_to_coordinates(vectors)
+        >>> print(lons, lats)
+        [0.0, 90.0] [0.0, 0.0]
+    """
+    if not vectors:
+        raise ValidationError("Empty vector collection provided")
+        
+    try:
+        # Convert to list if numpy array
+        vector_list = vectors.tolist() if isinstance(vectors, np.ndarray) else vectors
+        
+        # Validate input types
+        if not all(isinstance(v, Vector) for v in vector_list):
+            raise ValidationError("All elements must be Vector instances")
+        
+        # Convert each vector to radial coordinates
+        radial_points = [
+            RadialPoint(
+                lon=np.degrees(np.arctan2(v.y, v.x)),
+                lat=np.degrees(np.arcsin(v.z / np.sqrt(v.x**2 + v.y**2 + v.z**2)))
+            )
+            for v in vector_list
+        ]
+        
+        # Extract coordinates
+        lons = np.array([p.lon for p in radial_points])
+        lats = np.array([p.lat for p in radial_points])
+        
+        # Ensure longitude is in [-180, 180]
+        lons = np.where(lons > 180, lons - 360, lons)
+        lons = np.where(lons <= -180, lons + 360, lons)
+        
+        return lons, lats
+        
+    except Exception as e:
+        raise ValidationError(f"Failed to convert vectors to coordinates: {str(e)}")

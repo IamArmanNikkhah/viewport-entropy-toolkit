@@ -1,4 +1,4 @@
-# Spatial Entropy Analysis
+# viewport-entropy-toolkit
 
 A Python package for analyzing spatial entropy in 360-degree video viewport trajectories. This tool helps quantify and visualize how users' attention is distributed when watching 360-degree videos.
 
