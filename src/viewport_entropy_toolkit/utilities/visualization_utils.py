@@ -24,7 +24,7 @@ from matplotlib.axes import Axes
 from pathlib import Path
 from dataclasses import dataclass
 
-from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError
+from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError, convert_vectors_to_coordinates
 
 
 @dataclass
@@ -78,6 +78,7 @@ class PlotManager:
         self.fig, self.ax = plt.subplots(figsize=self.config.figure_size)
         self.time_text = None
         self._setup_plot()
+        print("Fix applied and code reached here")
 
     def _setup_plot(self) -> None:
         """Sets up the initial plot configuration."""
@@ -128,11 +129,18 @@ class PlotManager:
                 point = points_row[col_name]
                 if isinstance(point, RadialPoint):
                     points_list.append([point.lon, point.lat])
+
+        # Convert tile centers to plottable coordinates using new function
+        try:
+            tile_lons, tile_lats = convert_vectors_to_coordinates(tile_centers)
+        except ValidationError as e:
+            logger.error(f"Failed to convert tile centers: {str(e)}")
+            return [self.time_text]
         
         # Process tile colors
         largest_possible_weight = len(points_list)
         for tile_center in tile_centers:
-            vector_key = Vector(x=tile_center[0], y=tile_center[1], z=tile_center[2])
+            vector_key = Vector(x=tile_center.x, y=tile_center.y, z=tile_center.z)
             weight = tile_weights.get(vector_key, 0)
             intensity = weight / largest_possible_weight if largest_possible_weight > 0 else 0
             colors.append(self._get_color_from_intensity(intensity))
@@ -150,8 +158,8 @@ class PlotManager:
         
         # Plot tile centers
         self.ax.scatter(
-            tile_centers[:, 0],
-            tile_centers[:, 1],
+            tile_lons,
+            tile_lats,
             color=colors,
             label="Fibonacci Lattice",
             s=self.config.tile_point_size
