@@ -233,26 +233,12 @@ def compute_spatial_entropy(
     config: EntropyConfig
 ) -> Tuple[float, Dict[Vector, float], Dict[str, int]]:
     """Computes spatial entropy for a set of vectors using fixation counts and Gaussian smoothing.
-
+    
     The computation follows these steps:
     1. Count fixations per tile (N(i,j))
     2. Calculate initial probabilities p(i,j) = N(i,j)/N_total
-    3. Apply Gaussian smoothing to probabilities
+    3. Apply Gaussian smoothing with proper per-tile normalization
     4. Calculate entropy from smoothed distribution
-
-    Args:
-        vector_dict: Dictionary mapping identifiers to vectors.
-        tile_centers: List of tile center vectors.
-        config: Entropy calculation configuration.
-
-    Returns:
-        Tuple containing:
-        - float: Normalized spatial entropy.
-        - Dict[Vector, float]: Smoothed probability distribution.
-        - Dict[str, int]: Tile assignments for each vector.
-
-    Raises:
-        ValidationError: If input data is invalid.
     """
     if not vector_dict:
         raise ValidationError("Empty vector dictionary")
@@ -273,7 +259,7 @@ def compute_spatial_entropy(
         distances = find_angular_distances(vector, tile_centers)
         nearest_idx = int(distances[np.argmin(distances[:, 1])][0])
         nearest_tile = tile_centers[nearest_idx]
-
+        
         # Record assignment and increment count
         tile_assignments[identifier] = nearest_idx
         fixation_counts[nearest_tile] += 1
@@ -284,7 +270,7 @@ def compute_spatial_entropy(
 
     # Calculate initial probabilities
     initial_probabilities: Dict[Vector, float] = {
-        tile: count/n_total
+        tile: count/n_total 
         for tile, count in fixation_counts.items()
     }
 
@@ -292,24 +278,34 @@ def compute_spatial_entropy(
     smoothed_probabilities: Dict[Vector, float] = {}
     if config.use_weight_distribution:
         for target_tile in tile_centers:
-            smoothed_prob = 0.0
+            numerator = 0.0
+            denominator = 0.0
+            
+            # Calculate smoothed probability for this tile
             for source_tile, prob in initial_probabilities.items():
                 # Calculate distance between tiles
                 distance = vector_angle_distance(target_tile, source_tile)
-                # Apply Gaussian weight
-                weight = _calculate_gaussian_weight(
+                # Calculate kernel weight
+                kernel_weight = _calculate_gaussian_weight(
                     distance=distance,
                     sigma=config.sigma,
                     use_normalization=config.use_gaussian_normalization
                 )
-                smoothed_prob += prob * weight
-            smoothed_probabilities[target_tile] = smoothed_prob
+                
+                # Accumulate weighted probability and kernel weight
+                numerator += prob * kernel_weight
+                denominator += kernel_weight
+            
+            # Normalize using sum of kernel weights for this tile
+            if denominator > 0:
+                smoothed_probabilities[target_tile] = numerator / denominator
     else:
         smoothed_probabilities = initial_probabilities
 
-    # Normalize smoothed probabilities
+    # Verify probabilities sum to 1 (within numerical precision)
     total_prob = sum(smoothed_probabilities.values())
-    if total_prob > 0:
+    if not np.isclose(total_prob, 1.0, rtol=1e-5):
+        # Perform final normalization if needed due to numerical precision
         for tile in smoothed_probabilities:
             smoothed_probabilities[tile] /= total_prob
 
