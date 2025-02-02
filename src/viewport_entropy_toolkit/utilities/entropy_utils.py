@@ -292,10 +292,12 @@ def compute_transition_entropy(
 
     # Find the proportion of FOVs and of transitions in each tile.
     for identifier, vector in current_vector_dict.items():
+        if (identifier not in prior_vector_dict or identifier not in current_vector_dict):
+            continue
+
         prior_vector = prior_vector_dict[identifier]
         current_vector = current_vector_dict[identifier]
-        if (prior_vector is None or current_vector is None):
-            continue
+        
 
         # Find nearest tile for prior and current vectors
         distances = find_angular_distances(vector, tile_centers)
