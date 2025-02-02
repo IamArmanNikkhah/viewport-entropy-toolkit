@@ -121,6 +121,24 @@ def generate_fibonacci_lattice(num_points: int) -> List[Vector]:
     
     return vectors
 
+def find_nearest_tile(
+        vector: Vector,
+        tile_centers: List[Vector]
+)-> int:
+    """
+    Find nearest tile for a given vector.
+
+    Args:
+        vector: Input vector.
+        tile_centers: List of tile center vectors.
+    
+    Returns:
+        int: the index of tile_centers for the closest tile.
+    """
+    distances = find_angular_distances(vector, tile_centers)
+    nearest_tile = int(distances[np.argmin(distances[:, 1])][0])
+
+    return nearest_tile
 
 def calculate_tile_weights(
     vector: Vector,
@@ -200,9 +218,9 @@ def compute_spatial_entropy(
         weights = calculate_tile_weights(vector, tile_centers, config)
         
         # Record tile assignment (nearest tile)
-        distances = find_angular_distances(vector, tile_centers)
-        tile_assignments[identifier] = int(distances[np.argmin(distances[:, 1])][0])
-        
+        nearest_tile = find_nearest_tile(vector, tile_centers)
+        tile_assignments[identifier] = nearest_tile
+
         # Accumulate weights
         for tile, weight in weights.items():
             weight_per_tile[tile] = weight_per_tile.get(tile, 0.0) + weight
@@ -226,3 +244,122 @@ def compute_spatial_entropy(
     normalized_entropy = spatial_entropy / max_entropy
     
     return normalized_entropy, weight_per_tile, tile_assignments
+
+def compute_transition_entropy(
+        prior_vector_dict: dict,
+        current_vector_dict: dict,
+        tile_centers: list[Vector],
+        config: EntropyConfig,
+        FOV_angle: float
+        ) -> Tuple[float, Dict[Vector, float], Dict[str, int]]:
+    """
+    Computes transition entropy for a set of vectors.
+    
+    Args:
+        prior_vector_dict: Dictionary mapping identifiers to prior vectors.
+        current_vector_dict: Dictionary mapping identifiers to current vectors.
+        tile_centers: List of tile center vectors.
+        config: Entropy calculation configuration.
+    
+    Returns:
+        Tuple containing:
+        - float: Normalized transition entropy.
+        - Dict[Vector, float]: Tile weight distribution.
+        - Dict[str, int]: Tile assignments for each vector.
+    
+    Raises:
+        ValidationError: If input data is invalid.
+    """
+
+    if not prior_vector_dict or not current_vector_dict:
+        raise ValidationError("Empty vector dictionary")
+    if not tile_centers:
+        raise ValidationError("No tile centers provided")
+    
+    num_tiles = len(tile_centers)
+    weight_per_tile: Dict[Vector, float] = {}
+    total_weight = 0.0
+    tile_assignments: Dict[str, int] = {}
+
+    weight_per_tile = {}
+    transition_weight_per_tile = {}
+    total_weight = 0
+    tile_assignments = {}
+    transition_entropy = 0
+
+    # Maximum angular distance to consider for transition entropy calculation is half of FOV angle
+    max_angular_distance = float(FOV_angle) / 2.0
+
+    # Find the proportion of FOVs and of transitions in each tile.
+    for identifier, vector in current_vector_dict.items():
+        prior_vector = prior_vector_dict[identifier]
+        current_vector = current_vector_dict[identifier]
+        if (prior_vector is None or current_vector is None):
+            continue
+
+        # Find nearest tile for prior and current vectors
+        distances = find_angular_distances(vector, tile_centers)
+        tile_assignments[identifier] = int(distances[np.argmin(distances[:, 1])][0])
+
+        previous_nearest_tile_index = find_nearest_tile(prior_vector, tile_centers)
+        previous_nearest_tile = tile_centers[previous_nearest_tile_index]
+        current_nearest_tile_index = find_nearest_tile(current_vector, tile_centers)
+        current_nearest_tile = tile_centers[current_nearest_tile_index]
+
+        tile_assignments[identifier] = (previous_nearest_tile_index, current_nearest_tile_index)  # Store tile assignments
+
+        weight = 1
+
+        if previous_nearest_tile not in weight_per_tile:
+            transition_weight_per_tile[previous_nearest_tile] = {}
+            transition_weight_per_tile[previous_nearest_tile][current_nearest_tile_index] = weight
+        else:
+            if current_nearest_tile not in transition_weight_per_tile[previous_nearest_tile]:
+                transition_weight_per_tile[previous_nearest_tile][current_nearest_tile] = weight
+            else:
+                transition_weight_per_tile[previous_nearest_tile][current_nearest_tile] += weight
+
+        if (previous_nearest_tile not in weight_per_tile):
+            weight_per_tile[previous_nearest_tile] = weight
+        else:
+            weight_per_tile[previous_nearest_tile] += weight
+
+        total_weight += weight
+
+    # Given proportion of weights in each tile, calculate the transition entropy
+    for vector_key in weight_per_tile:
+        tile_weight = weight_per_tile[vector_key]
+
+        # Calculate the tile proportion as the tile weight over the total weight.
+        tile_proportion = float(tile_weight) / float(total_weight)
+
+        total_transition_weight = 0
+        total_cell_transition_entropy = 0
+
+        # Calculate the total transition weight.
+        for transition_vect_key in transition_weight_per_tile[vector_key]:
+            transition_weight = transition_weight_per_tile[vector_key][transition_vect_key]
+            total_transition_weight += transition_weight
+
+        # Calculate the transition proportions and cell entropy.
+        for transition_vect_key in transition_weight_per_tile[vector_key]:
+            transition_proportion = float(transition_weight) / float(total_transition_weight)
+            cell_transition_entropy = transition_proportion * np.log2(transition_proportion)
+            total_cell_transition_entropy += cell_transition_entropy
+
+        cell_entropy = -tile_proportion * total_cell_transition_entropy
+        transition_entropy += cell_entropy
+
+    # The maximum transition entropy is either the sum from 1 to number of tiles of:
+    if (total_weight > num_tiles):
+        tile_proportion_for_max = (1 / num_tiles)
+        maximum_transition_entropy = num_tiles * -tile_proportion_for_max * np.log2(tile_proportion_for_max)
+    # Or the sum from 1 to total weight of:
+    else:
+        tile_proportion_for_max = (1 / total_weight)
+        maximum_transition_entropy = total_weight * -tile_proportion_for_max * np.log2(tile_proportion_for_max)
+
+    # Normalize the transition entropy by dividing the transition entropy by the maximum transition entropy
+    transition_entropy = transition_entropy / maximum_transition_entropy
+
+    return transition_entropy, weight_per_tile, tile_assignments

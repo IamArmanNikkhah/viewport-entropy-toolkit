@@ -5,5 +5,9 @@ Currently includes the main spatial entropy analyzer for viewport trajectory ana
 """
 
 from .spatial_entropy import SpatialEntropyAnalyzer
+from .transition_entropy import TransitionEntropyAnalyzer
 
-__all__ = ['SpatialEntropyAnalyzer']
+__all__ = [
+    'SpatialEntropyAnalyzer',
+    'TransitionEntropyAnalyzer'
+    ]
