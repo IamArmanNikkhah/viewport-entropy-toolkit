@@ -55,7 +55,6 @@ class AnalyzerConfig:
     output_dir: Path = Path('output')
     entropy_config: EntropyConfig = field(default_factory=EntropyConfig)
     visualization_config: VisualizationConfig = field(default_factory=VisualizationConfig)
-    use_weight_distribution: bool = True
     
 
     def __post_init__(self) -> None:
@@ -66,7 +65,7 @@ class AnalyzerConfig:
             raise ValueError("Must specify at least one tile count")
         if any(count <= 0 for count in self.tile_counts):
             raise ValueError("Tile counts must be positive")
-        
+
         # Create output directory if it doesn't exist
         self.output_dir.mkdir(parents=True, exist_ok=True)
     
