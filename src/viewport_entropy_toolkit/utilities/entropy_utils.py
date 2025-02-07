@@ -248,7 +248,7 @@ def compute_spatial_entropy(
 def compute_transition_entropy(
         prior_vector_dict: dict,
         current_vector_dict: dict,
-        tile_centers: list[Vector],
+        tile_centers: List[Vector],
         config: EntropyConfig,
         FOV_angle: float
         ) -> Tuple[float, Dict[Vector, float], Dict[str, int]]:
