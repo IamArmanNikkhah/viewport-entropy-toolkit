@@ -109,8 +109,8 @@ class NaiveAnalyzerConfig:
         """Validates configuration and creates output directory."""
         if self.video_width <= 0 or self.video_height <= 0:
             raise ValueError("Video dimensions must be positive")
-        if not self.tile_counts:
-            raise ValueError("Must specify at least one tile count")
+        if not self.tile_height or self.tile_width:
+            raise ValueError("Must specify both tile_height and tile_width")
         if any(count <= 0 for count in self.tile_counts):
             raise ValueError("Tile counts must be positive")
         
