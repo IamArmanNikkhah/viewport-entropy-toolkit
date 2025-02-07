@@ -143,10 +143,8 @@ class NaiveSpatialEntropyAnalyzer:
             )
             total_entropy += entropy
             
-            avg_entropy = total_entropy / len(self.config.tile_counts)
-            
             entropy_results['time'].append(time)
-            entropy_results['entropy'].append(avg_entropy)
+            entropy_results['entropy'].append(entropy)
             entropy_results['tile_weights'].append(weights)
             entropy_results['tile_assignments'].append(assignments)
         
