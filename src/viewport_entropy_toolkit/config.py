@@ -109,10 +109,8 @@ class NaiveAnalyzerConfig:
         """Validates configuration and creates output directory."""
         if self.video_width <= 0 or self.video_height <= 0:
             raise ValueError("Video dimensions must be positive")
-        if not self.tile_height or self.tile_width:
+        if not self.tile_height or not self.tile_width:
             raise ValueError("Must specify both tile_height and tile_width")
-        if any(count <= 0 for count in self.tile_counts):
-            raise ValueError("Tile counts must be positive")
         
         # Create output directory if it doesn't exist
         self.output_dir.mkdir(parents=True, exist_ok=True)
