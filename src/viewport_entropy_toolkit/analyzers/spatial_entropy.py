@@ -28,7 +28,8 @@ from ..utilities.entropy_utils import (
 from ..utilities.visualization_utils import (
     PlotManager,
     create_animation,
-    save_video
+    save_video,
+    save_graph
 )
 from ..data_types import Vector, RadialPoint, ValidationError
 
@@ -175,6 +176,18 @@ class SpatialEntropyAnalyzer:
             raise ValidationError("No entropy results. Call compute_entropy first.")
         
         try:
+            # Create graph plot
+            graph_path = self.config.get_output_path(
+                f"{base_name}_graph",
+                DEFAULT_OUTPUT_FORMATS['plot']
+            )
+            save_graph(
+                entropy_values=self._entropy_results['entropy'],
+                time_values=self._entropy_results['time'],
+                output_path=graph_path,
+                config=self.config.visualization_config
+            )
+
             # Create animation
             animation = create_animation(
                 self.plot_manager,
