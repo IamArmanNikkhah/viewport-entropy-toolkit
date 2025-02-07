@@ -20,6 +20,9 @@ from .entropy_utils import (
     calculate_tile_weights,
     compute_spatial_entropy,
     compute_transition_entropy,
+    calculate_naive_tile_weights,
+    find_naive_tile_index,
+    compute_naive_spatial_entropy,
     EntropyConfig
 )
 
@@ -46,6 +49,9 @@ __all__ = [
     'calculate_tile_weights',
     'compute_spatial_entropy',
     'compute_transition_entropy',
+    'calculate_naive_tile_weights',
+    'find_naive_tile_index',
+    'compute_naive_spatial_entropy',
     'EntropyConfig',
     
     # Visualization utilities

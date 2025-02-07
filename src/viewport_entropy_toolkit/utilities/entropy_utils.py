@@ -15,7 +15,7 @@ from typing import Dict, List, Tuple, Optional
 import numpy as np
 from dataclasses import dataclass
 
-from viewport_entropy_toolkit import Vector, ValidationError
+from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError
 
 
 @dataclass
@@ -145,7 +145,7 @@ def calculate_tile_weights(
     tile_centers: List[Vector],
     config: EntropyConfig
 ) -> Dict[Vector, float]:
-    """Calculates weight distribution across tiles for a vector.
+    """Calculates weight distribution across tiles for a vector using fibonacci lattice tiling.
     
     Args:
         vector: Input vector.
@@ -365,3 +365,128 @@ def compute_transition_entropy(
     transition_entropy = transition_entropy / maximum_transition_entropy
 
     return transition_entropy, weight_per_tile, tile_assignments
+
+
+def calculate_naive_tile_weights(
+    point: RadialPoint,
+    tile_height: float,
+    tile_width: float,
+    config: EntropyConfig
+) -> Dict[str, float]:
+    """Calculates weight distribution across tiles for a vector using naive tiling.
+    
+    Args:
+        point: Input point.
+        tile_height: Latitudinal height of the tile, in radians.
+        tile_width: Latitudinal width of tile, in radians.
+        config: Entropy calculation configuration.
+    
+    Returns:
+        Dict[str, float]: Dictionary mapping tile centers to weights.
+    """
+
+    weights = {}
+    
+    # find the tile this point sits in.
+    tile_index = find_naive_tile_index(point, tile_height, tile_width)
+
+    weights[tile_index] = 1.0
+    
+    return weights
+
+def find_naive_tile_index(
+    point: RadialPoint,
+    tile_height: float,
+    tile_width: float,
+) -> str:
+    """Calculates the lon and lat indices for the naive tile this point sits in.
+    
+    Args:
+        point: Input point.
+        tile_height: Latitudinal height of the tile, in radians.
+        tile_width: Latitudinal width of tile, in radians.
+    
+    Returns:
+        Dict[Vector, float]: Dictionary mapping tile centers to weights.
+    """
+    # calculate the tile this vector sits in.
+    tile_lon_index = point.lon / tile_width
+    if (point.lon < 0):
+        tile_lon_index -= 1
+    tile_lat_index = point.lat / tile_height
+    if (point.lat < 0):
+        tile_lat_index += 1
+
+    return f"{tile_lon_index}_{tile_lat_index}"
+
+def compute_naive_spatial_entropy(
+    points_dict: Dict[str, RadialPoint],
+    tile_height: int,
+    tile_width: int,
+    config: EntropyConfig
+) -> Tuple[float, Dict[str, float], Dict[str, str]]:
+    """Computes spatial entropy for a set of radial points using naive tiling.
+    
+    Args:
+        points_dict: Dictionary mapping identifiers to radial points.
+        tile_height: The tile latitudinal height.
+        tile_width: The tile longitudinal width.
+        config: Entropy calculation configuration.
+    
+    Returns:
+        Tuple containing:
+        - float: Normalized spatial entropy.
+        - Dict[str, float]: Tile weight distribution.
+        - Dict[str, str]: Tile assignments for each radial point.
+    
+    Raises:
+        ValidationError: If input data is invalid.
+    """
+    if not points_dict:
+        raise ValidationError("Empty radial points dictionary")
+    if not tile_height or not tile_width:
+        raise ValidationError("No tile dimensions provided")
+    if 180 % tile_height != 0:
+        raise ValidationError("Tile height must divide 180!")
+    if 360 % tile_width != 0:
+        raise ValidationError("Tile width must divide 360!")
+
+    num_tiles = int(180.0 / tile_height) * int(360.0 / tile_width)
+    weight_per_tile: Dict[str, float] = {}
+    total_weight = 0.0
+    tile_assignments: Dict[str, str] = {}
+    
+    # Calculate weights for each radial points
+    for identifier, point in points_dict.items():
+        if point is None:
+            continue
+            
+        weights = calculate_naive_tile_weights(point, tile_height, tile_width, config)
+        
+        # Record tile assignment (nearest tile)
+        nearest_tile = find_naive_tile_index(point, tile_height, tile_width)
+        tile_assignments[identifier] = nearest_tile
+
+        # Accumulate weights
+        for tile, weight in weights.items():
+            weight_per_tile[tile] = weight_per_tile.get(tile, 0.0) + weight
+            total_weight += weight
+    
+    # Calculate entropy
+    spatial_entropy = 0.0
+    for weight in weight_per_tile.values():
+        proportion = weight / total_weight
+        spatial_entropy -= proportion * np.log2(proportion)
+    
+    # Calculate maximum possible entropy
+    if config.use_weight_distribution or total_weight > num_tiles:
+        max_proportion = 1.0 / num_tiles
+        max_entropy = -num_tiles * max_proportion * np.log2(max_proportion)
+    else:
+        max_proportion = 1.0 / total_weight
+        max_entropy = -total_weight * max_proportion * np.log2(max_proportion)
+    
+    # Normalize entropy
+    normalized_entropy = spatial_entropy / max_entropy
+    
+    return normalized_entropy, weight_per_tile, tile_assignments
