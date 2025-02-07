@@ -180,7 +180,7 @@ class PlotManager:
         """
         row = entropy_data.iloc[time_index]
         text = (
-            f"Entropy: {row['spatial_entropy']:.2f}\n"
+            f"Entropy: {row['entropy']:.2f}\n"
             f"Time: {row['time']:.1f}"
         )
         self.time_text.set_text(text)

@@ -119,7 +119,7 @@ class SpatialEntropyAnalyzer:
         
         entropy_results = {
             'time': [],
-            'spatial_entropy': [],
+            'entropy': [],
             'tile_weights': [],
             'tile_assignments': []
         }
@@ -155,7 +155,7 @@ class SpatialEntropyAnalyzer:
             avg_entropy = total_entropy / len(self.config.tile_counts)
             
             entropy_results['time'].append(time)
-            entropy_results['spatial_entropy'].append(avg_entropy)
+            entropy_results['entropy'].append(avg_entropy)
             entropy_results['tile_weights'].append(weights)
             entropy_results['tile_assignments'].append(assignments)
         
@@ -200,7 +200,7 @@ class SpatialEntropyAnalyzer:
                 base_name,
                 DEFAULT_OUTPUT_FORMATS['data']
             )
-            self._entropy_results[['time', 'spatial_entropy']].to_csv(
+            self._entropy_results[['time', 'entropy']].to_csv(
                 data_path,
                 index=False
             )
