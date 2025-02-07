@@ -19,6 +19,7 @@ __all__ = [
     'convert_vectors_to_coordinates',
     'AnalyzerConfig',
     'SpatialEntropyAnalyzer',
+    'TransitionEntropyAnalyzer',
     'DEFAULT_VIDEO_DIMENSIONS',
     'DEFAULT_TILE_COUNTS'
 ]
