@@ -410,12 +410,8 @@ def find_naive_tile_index(
         Dict[Vector, float]: Dictionary mapping tile centers to weights.
     """
     # calculate the tile this vector sits in.
-    tile_lon_index = int(point.lon / tile_width)
-    if (point.lon < 0):
-        tile_lon_index -= 1
-    tile_lat_index = int(point.lat / tile_height)
-    if (point.lat < 0):
-        tile_lat_index += 1
+    tile_lon_index = int(point.lon + 180 / tile_width)
+    tile_lat_index = int(point.lat + 90 / tile_height)
 
     return f"{tile_lon_index}_{tile_lat_index}"
 
