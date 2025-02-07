@@ -136,9 +136,10 @@ class NaiveSpatialEntropyAnalyzer:
             
             
             entropy, tile_weights, tile_assignments = compute_naive_spatial_entropy(
-                points_dict,
-                self.config.tile_height,
-                self.config.tile_width
+                points_dict=points_dict,
+                tile_height=self.config.tile_height,
+                tile_width=self.config.tile_width,
+                config=self.config.entropy_config
             )
             total_entropy += entropy
             
