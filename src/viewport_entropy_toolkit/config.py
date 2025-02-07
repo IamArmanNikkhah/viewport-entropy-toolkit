@@ -99,7 +99,6 @@ class NaiveAnalyzerConfig:
     output_dir: Path = Path('output')
     entropy_config: EntropyConfig = field(default_factory=EntropyConfig)
     visualization_config: VisualizationConfig = field(default_factory=VisualizationConfig)
-    use_weight_distribution: bool = False
     
     tile_width: int = -1
     tile_height: int = -1
