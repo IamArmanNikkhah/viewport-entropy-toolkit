@@ -180,7 +180,7 @@ class PlotManager:
         """
         row = entropy_data.iloc[time_index]
         text = (
-            f"Entropy: {row['spatial_entropy']:.2f}\n"
+            f"Entropy: {row['entropy']:.2f}\n"
             f"Time: {row['time']:.1f}"
         )
         self.time_text.set_text(text)
@@ -267,3 +267,36 @@ def save_video(
         print(f"Video saved to {output_path}")
     except Exception as e:
         raise RuntimeError(f"Error saving video: {str(e)}")
+
+def save_graph(
+        entropy_values: List[float],
+        time_values: List[float],
+        output_path: Path,
+        config: Optional[VisualizationConfig] = None
+) -> None:
+    """Saves graph as png file.
+    
+    Args:
+        entropy_value: The list of entropy values.
+        output_path: Path for output video file.
+        config: Optional visualization configuration.
+    """
+    
+    if (len(entropy_values) != len(time_values)):
+        raise ValueError("Entropy values length must match time values length!")
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(time_values, entropy_values, marker='o', linestyle='-')
+    plt.xlabel('Time')
+    plt.ylabel('Entropy')
+    plt.title('Entropy over Time')
+    plt.grid(True)
+
+    # Save the figure to a file
+    plt.savefig(output_path)
+
+    # Show the plot (optional, if you want to display it as well)
+    plt.show()
+
+    # Close the figure to free up memory
+    plt.close()

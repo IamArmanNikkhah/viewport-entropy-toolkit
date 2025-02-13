@@ -3,6 +3,7 @@
 import pytest
 from viewport_entropy_toolkit.data_types import Point, RadialPoint, Vector
 from viewport_entropy_toolkit.analyzers.spatial_entropy import SpatialEntropyAnalyzer
+from viewport_entropy_toolkit.analyzers.transition_entropy import TransitionEntropyAnalyzer
 from viewport_entropy_toolkit.config import AnalyzerConfig
 
 def test_point_creation():
@@ -24,9 +25,18 @@ def test_vector_creation():
     assert vector.y == 2.0
     assert vector.z == 3.0
 
-def test_analyzer_initialization():
+def test_spatial_analyzer_initialization():
     """Test SpatialEntropyAnalyzer initialization."""
     analyzer = SpatialEntropyAnalyzer(config=AnalyzerConfig(
+        video_width=100,
+        video_height=200
+    ))
+    assert analyzer.config.video_width == 100
+    assert analyzer.config.video_height == 200
+
+def test_transition_analyzer_initialization():
+    """Test TransitionEntropyAnalyzer initialization."""
+    analyzer = TransitionEntropyAnalyzer(config=AnalyzerConfig(
         video_width=100,
         video_height=200
     ))

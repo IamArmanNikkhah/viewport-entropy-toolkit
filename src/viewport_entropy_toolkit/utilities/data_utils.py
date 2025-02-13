@@ -73,7 +73,7 @@ def pixel_to_spherical(point: Point, video_width: int, video_height: int) -> Rad
     """
     validate_video_dimensions(video_width, video_height)
     
-    if point.pixel_x >= video_width or point.pixel_y >= video_height:
+    if point.pixel_x > video_width or point.pixel_y > video_height:
         raise ValidationError("Pixel coordinates exceed video dimensions")
     
     lon = (point.pixel_x / video_width) * 360 - 180

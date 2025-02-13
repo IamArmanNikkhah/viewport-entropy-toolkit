@@ -15,14 +15,13 @@ import numpy as np
 import logging
 from datetime import datetime
 
-from ..config import AnalyzerConfig, DEFAULT_OUTPUT_FORMATS
+from ..config import NaiveAnalyzerConfig, DEFAULT_OUTPUT_FORMATS
 from ..utilities.data_utils import (
     process_viewport_data,
     format_trajectory_data
 )
 from ..utilities.entropy_utils import (
-    generate_fibonacci_lattice,
-    compute_spatial_entropy,
+    compute_naive_spatial_entropy,
     EntropyConfig
 )
 from ..utilities.visualization_utils import (
@@ -37,8 +36,8 @@ from ..data_types import Vector, RadialPoint, ValidationError
 logger = logging.getLogger(__name__)
 
 
-class SpatialEntropyAnalyzer:
-    """Analyzer for computing spatial entropy in viewport trajectories.
+class NaiveSpatialEntropyAnalyzer:
+    """Analyzer for computing spatial entropy using naive tiling in viewport trajectories.
     
     This class handles the complete pipeline of spatial entropy analysis,
     including data loading, processing, entropy calculation, and visualization.
@@ -50,20 +49,16 @@ class SpatialEntropyAnalyzer:
         _entropy_results (pd.DataFrame): Cached entropy results.
     """
     
-    def __init__(self, config: Optional[AnalyzerConfig] = None):
+    def __init__(self, config: Optional[NaiveAnalyzerConfig] = None):
         """Initializes the analyzer.
         
         Args:
             config: Optional configuration for the analyzer.
         """
-        self.config = config or AnalyzerConfig()
+        self.config = config or NaiveAnalyzerConfig()
         self.plot_manager = PlotManager(self.config.visualization_config)
         self._data_cache = {}
         self._entropy_results = None
-        self._fibonacci_vectors = {
-            count: generate_fibonacci_lattice(count)
-            for count in self.config.tile_counts
-        }
     
     def process_directory(self, directory: Path) -> None:
         """Processes all VCT files in a directory.
@@ -116,7 +111,7 @@ class SpatialEntropyAnalyzer:
         if not self._data_cache:
             raise ValidationError("No data available. Call process_directory first.")
         
-        vectors_df = self._data_cache['vectors']
+        points_df = self._data_cache['points']
         
         entropy_results = {
             'time': [],
@@ -126,11 +121,11 @@ class SpatialEntropyAnalyzer:
         }
         
         # Compute entropy for each time step
-        for _, row in vectors_df.iterrows():
+        for _, row in points_df.iterrows():
             time = row['time']
-            vector_dict = {
+            points_dict = {
                 col: row[col]
-                for col in vectors_df.columns
+                for col in points_df.columns
                 if col != 'time' and row[col] is not None
             }
             
@@ -139,24 +134,17 @@ class SpatialEntropyAnalyzer:
             weights = None
             assignments = None
             
-            for tile_count in self.config.tile_counts:
-                tile_centers = self._fibonacci_vectors[tile_count]
-                entropy, tile_weights, tile_assignments = compute_spatial_entropy(
-                    vector_dict,
-                    tile_centers,
-                    self.config.entropy_config
-                )
-                total_entropy += entropy
-                
-                # Store weights and assignments for first tile count
-                if tile_count == self.config.tile_counts[0]:
-                    weights = tile_weights
-                    assignments = tile_assignments
             
-            avg_entropy = total_entropy / len(self.config.tile_counts)
+            entropy, tile_weights, tile_assignments = compute_naive_spatial_entropy(
+                points_dict=points_dict,
+                tile_height=self.config.tile_height,
+                tile_width=self.config.tile_width,
+                config=self.config.entropy_config
+            )
+            total_entropy += entropy
             
             entropy_results['time'].append(time)
-            entropy_results['entropy'].append(avg_entropy)
+            entropy_results['entropy'].append(entropy)
             entropy_results['tile_weights'].append(weights)
             entropy_results['tile_assignments'].append(assignments)
         
@@ -188,25 +176,25 @@ class SpatialEntropyAnalyzer:
                 config=self.config.visualization_config
             )
 
-            # Create animation
-            animation = create_animation(
-                self.plot_manager,
-                self._data_cache['points'],
-                self._fibonacci_vectors[self.config.tile_counts[0]],
-                dict(enumerate(self._entropy_results['tile_weights'])),
-                self._entropy_results
-            )
+            # # Create animation
+            # animation = create_animation(
+            #     self.plot_manager,
+            #     self._data_cache['points'],
+            #     self._fibonacci_vectors[self.config.tile_counts[0]],
+            #     dict(enumerate(self._entropy_results['tile_weights'])),
+            #     self._entropy_results
+            # )
             
-            # Save video
-            video_path = self.config.get_output_path(
-                base_name,
-                DEFAULT_OUTPUT_FORMATS['video']
-            )
-            save_video(
-                animation,
-                video_path,
-                self.config.visualization_config
-            )
+            # # Save video
+            # video_path = self.config.get_output_path(
+            #     base_name,
+            #     DEFAULT_OUTPUT_FORMATS['video']
+            # )
+            # save_video(
+            #     animation,
+            #     video_path,
+            #     self.config.visualization_config
+            # )
             
             # Save entropy data
             data_path = self.config.get_output_path(

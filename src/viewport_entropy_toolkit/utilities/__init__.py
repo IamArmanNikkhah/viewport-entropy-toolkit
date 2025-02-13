@@ -16,8 +16,13 @@ from .entropy_utils import (
     vector_angle_distance,
     find_angular_distances,
     generate_fibonacci_lattice,
+    find_nearest_tile,
     calculate_tile_weights,
     compute_spatial_entropy,
+    compute_transition_entropy,
+    calculate_naive_tile_weights,
+    find_naive_tile_index,
+    compute_naive_spatial_entropy,
     EntropyConfig
 )
 
@@ -40,8 +45,13 @@ __all__ = [
     'vector_angle_distance',
     'find_angular_distances',
     'generate_fibonacci_lattice',
+    'find_nearest_tile',
     'calculate_tile_weights',
     'compute_spatial_entropy',
+    'compute_transition_entropy',
+    'calculate_naive_tile_weights',
+    'find_naive_tile_index',
+    'compute_naive_spatial_entropy',
     'EntropyConfig',
     
     # Visualization utilities

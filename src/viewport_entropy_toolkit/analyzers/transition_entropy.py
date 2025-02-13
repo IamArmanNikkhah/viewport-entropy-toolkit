@@ -1,11 +1,11 @@
-"""Spatial entropy analyzer module.
+"""Transition entropy analyzer module.
 
-This module provides the main analyzer class for computing spatial entropy
+This module provides the main analyzer class for computing transition entropy
 in 360-degree video viewport data. It coordinates data processing, entropy
 calculations, and visualization generation.
 
 Classes:
-    SpatialEntropyAnalyzer: Main class for spatial entropy analysis.
+    TransitionEntropyAnalyzer: Main class for transition entropy analysis.
 """
 
 from pathlib import Path
@@ -22,7 +22,7 @@ from ..utilities.data_utils import (
 )
 from ..utilities.entropy_utils import (
     generate_fibonacci_lattice,
-    compute_spatial_entropy,
+    compute_transition_entropy,
     EntropyConfig
 )
 from ..utilities.visualization_utils import (
@@ -37,10 +37,10 @@ from ..data_types import Vector, RadialPoint, ValidationError
 logger = logging.getLogger(__name__)
 
 
-class SpatialEntropyAnalyzer:
-    """Analyzer for computing spatial entropy in viewport trajectories.
+class TransitionEntropyAnalyzer:
+    """Analyzer for computing transition entropy in viewport trajectories.
     
-    This class handles the complete pipeline of spatial entropy analysis,
+    This class handles the complete pipeline of transition entropy analysis,
     including data loading, processing, entropy calculation, and visualization.
     
     Attributes:
@@ -105,7 +105,7 @@ class SpatialEntropyAnalyzer:
             raise ValidationError(f"Failed to process directory: {str(e)}")
     
     def compute_entropy(self) -> pd.DataFrame:
-        """Computes spatial entropy for the processed data.
+        """Computes transition entropy for the processed data.
         
         Returns:
             pd.DataFrame: DataFrame containing entropy results.
@@ -126,9 +126,10 @@ class SpatialEntropyAnalyzer:
         }
         
         # Compute entropy for each time step
-        for _, row in vectors_df.iterrows():
+        for idx, row in vectors_df.iterrows():
             time = row['time']
-            vector_dict = {
+
+            current_vector_dict = {
                 col: row[col]
                 for col in vectors_df.columns
                 if col != 'time' and row[col] is not None
@@ -139,12 +140,19 @@ class SpatialEntropyAnalyzer:
             weights = None
             assignments = None
             
+            # Skip for the first time step
+            if idx == 0:
+                prior_vector_dict = current_vector_dict
+                continue
+
             for tile_count in self.config.tile_counts:
                 tile_centers = self._fibonacci_vectors[tile_count]
-                entropy, tile_weights, tile_assignments = compute_spatial_entropy(
-                    vector_dict,
-                    tile_centers,
-                    self.config.entropy_config
+                entropy, tile_weights, tile_assignments = compute_transition_entropy(
+                    prior_vector_dict=prior_vector_dict,
+                    current_vector_dict=current_vector_dict,
+                    tile_centers=tile_centers,
+                    config=self.config.entropy_config,
+                    FOV_angle=120,
                 )
                 total_entropy += entropy
                 
@@ -159,6 +167,9 @@ class SpatialEntropyAnalyzer:
             entropy_results['entropy'].append(avg_entropy)
             entropy_results['tile_weights'].append(weights)
             entropy_results['tile_assignments'].append(assignments)
+            
+            # Store the current vector dict as prior dict.
+            prior_vector_dict = current_vector_dict
         
         self._entropy_results = pd.DataFrame(entropy_results)
         return self._entropy_results

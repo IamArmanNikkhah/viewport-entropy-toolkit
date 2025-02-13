@@ -5,7 +5,7 @@ A Python package for analyzing spatial entropy in 360-degree video viewport traj
 ## Features
 
 - Analyze viewport center trajectories (VCT) from 360-degree video viewing data
-- Calculate spatial entropy using configurable tile-based analysis
+- Calculate spatial and transition entropy using configurable tile-based analysis
 - Generate visualizations including heatmaps and animations
 - Support for batch processing of multiple videos
 - Configurable analysis parameters and visualization options
@@ -25,7 +25,7 @@ A Python package for analyzing spatial entropy in 360-degree video viewport traj
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/spatial-entropy.git
+git clone https://github.com/IamArmanNikkhah/viewport-entropy-toolkit.git
 cd spatial-entropy
 ```
 
