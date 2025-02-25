@@ -304,7 +304,7 @@ def save_graph(
     # Close the figure to free up memory
     plt.close()
 
-def save_tiling_visualization_video(tile_count: int, output_path: Path, horizontal_pan: bool=True, vertical_pan: bool=True):
+def save_tiling_visualization_video(tile_count: int, output_dir: Path, horizontal_pan: bool=True, vertical_pan: bool=True):
     """Saves a video of the tiling on a sphere for fibonacci lattice.
     
     Args:
@@ -395,7 +395,7 @@ def save_tiling_visualization_video(tile_count: int, output_path: Path, horizont
 
     try:
         # Open movie file
-        video_file_name = os.path.join(str(output_path), f'fibonacci_lattice-{tile_count}_tiles{file_name_suffix}.mp4')
+        video_file_name = os.path.join(str(output_dir), f'fibonacci_lattice-{tile_count}_tiles{file_name_suffix}.mp4')
         plotter.open_movie(video_file_name)
 
         # Rotate camera and write frames
@@ -413,7 +413,7 @@ def save_tiling_visualization_video(tile_count: int, output_path: Path, horizont
 
 def save_tiling_visualization_image(
         tile_count: int,
-        output_path: Path,
+        output_dir: Path,
         camera_position: Tuple[float, float, float]=(0, 0, 5),
         camera_up: Tuple[float, float, float]= (0, 1, 0),
         camera_focal_point: Tuple[float, float, float] = (0,0,0)
@@ -484,14 +484,14 @@ def save_tiling_visualization_image(
     plotter.camera.up = camera_up
     plotter.camera.focal_point = camera_focal_point
 
-    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}"
+    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}-camera_up_{camera_up[0]}_{camera_up[1]}_{camera_up[2]}"
 
     plotter.enable_parallel_projection()
     plotter.show_axes_all()
     plotter.remove_bounds_axes()
 
     # Create filename
-    png_file_name = os.path.join(str(output_path), f'fibonacci_lattice-{tile_count}_tiles{file_name_suffix}.png')
+    png_file_name = os.path.join(str(output_dir), f'fibonacci_lattice-{tile_count}_tiles{file_name_suffix}.png')
 
     try:
         plotter.screenshot(png_file_name)
