@@ -414,7 +414,7 @@ def save_tiling_visualization_video(tile_count: int, output_path: Path, horizont
 def save_tiling_visualization_image(
         tile_count: int,
         output_path: Path,
-        camera_position: Tuple[float, float, float]=(0, 0, 20),
+        camera_position: Tuple[float, float, float]=(0, 0, 5),
         camera_up: Tuple[float, float, float]= (0, 1, 0),
         camera_focal_point: Tuple[float, float, float] = (0,0,0)
         ):
