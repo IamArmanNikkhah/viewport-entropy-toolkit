@@ -28,7 +28,7 @@ from dataclasses import dataclass
 
 from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError, convert_vectors_to_coordinates
 from entropy_utils import generate_fibonacci_lattice
-from data_utils import normalize, get_line_segment, find_perpendicular_on_tangent_plane, great_circle_intersection, find_nearest_point,spherical_interpolation
+from data_utils import spherical_interpolation, get_fb_tile_boundaries
 
 @dataclass
 class VisualizationConfig:
@@ -313,127 +313,12 @@ def save_tiling_visualization_video(tile_count: int, output_path: Path, horizont
         config: Optional visualization configuration.
     """
 
-    if (tile_count <= 0):
-        raise ValidationError("Tile counts cannot be less than 1 for to visualize tiling!")
-
     if (horizontal_pan is False and vertical_pan is False):
         raise ValidationError("Video must pan horizontally or vertically or both!")
 
-    # Grab tile center points
+     # Grab tile center points and tile boundaries.
     tile_centers_vectors = generate_fibonacci_lattice(tile_count)
-    tile_boundaries = {}
-
-    for index_i in range(len(tile_centers_vectors)):
-        tile_center_i = tile_centers_vectors[index_i]
-        tile_boundaries[index_i] = []
-
-        neighbors = []
-        great_circle_vectors = {}
-        for index_j in range(0, len(tile_centers_vectors)):
-            if (index_j == index_i):
-                continue
-
-            tile_center_j = tile_centers_vectors[index_j]
-
-
-            # Find the vector between the two tile centers
-            line_segment = get_line_segment(tile_center_i, tile_center_j)
-            line_vector = Vector(line_segment[0], line_segment[1], line_segment[2])
-
-            # Compute the length of the line segment
-            length = np.linalg.norm(line_segment)
-            neighbors.append([index_j, length])
-
-            # Calculate the midpoint of the line between the two centers
-            midpoint = np.array([(tile_center_i.x + tile_center_j.x) / 2, (tile_center_i.y + tile_center_j.y) / 2, (tile_center_i.z + tile_center_j.z) / 2])
-
-            # Normalize the midpoint to project it onto the sphere's surface
-            midpoint = normalize(midpoint)
-            # Grab the perpendicular segment to the line segment that uses the plane tangeant to the sphere at the midpoint.
-            perp_segment = find_perpendicular_on_tangent_plane(line_segment, midpoint)
-            perp_vector = Vector(perp_segment[0], perp_segment[1], perp_segment[2])
-
-            # We use the normal vector of the plane of the great circle.
-            # This plane passes through the center of the sphere and defines the great circle by its intersection with the sphere.
-            great_circle_vectors[index_j] = line_vector
-
-        neighbors.sort(key=lambda x: x[1])
-        smallest_distance = neighbors[0][1]
-        nearest_tile_boundaries = {}
-
-        for index_j in range(len(neighbors)):
-            neighbor_j = neighbors[index_j]
-            if (neighbor_j[1] >= smallest_distance * 1.7):
-                break
-
-            tile_index_j = neighbor_j[0]
-            tile_center_j = tile_centers_vectors[tile_index_j]
-            great_circle_j = great_circle_vectors[tile_index_j]
-
-            intersections = []
-
-            for index_k in range(len(neighbors)):
-                neighbor_k = neighbors[index_k]
-                if (index_k == index_j):
-                    continue
-                if (neighbor_k[1] >= smallest_distance * 1.7):
-                    break
-
-                tile_index_k = neighbor_k[0]
-                tile_center_k = tile_centers_vectors[tile_index_k]
-                great_circle_k = great_circle_vectors[tile_index_k]
-
-                p1, p2 = great_circle_intersection(np.array([great_circle_j.x, great_circle_j.y, great_circle_j.z]), np.array([great_circle_k.x, great_circle_k.y, great_circle_k.z]))
-
-                p1_vec = Vector(p1[0], p1[1], p1[2])
-                p2_vec = Vector(p2[0], p2[1], p2[2])
-
-                intersection_vector = find_nearest_point(p1_vec, p2_vec, tile_center_i)
-
-
-                intersection_i_seg = get_line_segment(tile_center_i, intersection_vector)
-                length_i = np.linalg.norm(intersection_i_seg).round(4)
-
-                intersections.append([intersection_vector, length_i, tile_index_k])
-
-            if (len(intersections) < 2):
-                continue
-
-            intersections.sort(key=lambda x: x[1])
-
-            # Check if the two shortest intersection points are shorter than the intersection of their great circles.
-            shortest_intersection = intersections[0]
-            second_shortest_intersection = intersections[1]
-
-            tile_index_a = shortest_intersection[2]
-            tile_index_b = second_shortest_intersection[2]
-
-            great_circle_a = great_circle_vectors[tile_index_a]
-            great_circle_b = great_circle_vectors[tile_index_b]
-
-            p1, p2 = great_circle_intersection(np.array([great_circle_a.x, great_circle_a.y, great_circle_a.z]), np.array([great_circle_b.x, great_circle_b.y, great_circle_b.z]))
-
-            p1_vec = Vector(p1[0], p1[1], p1[2])
-            p2_vec = Vector(p2[0], p2[1], p2[2])
-
-            intersection_vector = find_nearest_point(p1_vec, p2_vec, tile_center_i)
-
-            intersection_i_seg = get_line_segment(tile_center_i, intersection_vector)
-            length_intersection = np.linalg.norm(intersection_i_seg).round(4)
-            midpoint_ij = np.array([(tile_center_i.x + tile_center_j.x) / 2, (tile_center_i.y + tile_center_j.y) / 2, (tile_center_i.z + tile_center_j.z) / 2])
-            midpoint_ij = normalize(midpoint_ij)
-            midpoint_ij_vec = Vector(midpoint_ij[0], midpoint_ij[1], midpoint_ij[2])
-            midpoint_i_seg = get_line_segment(tile_center_i, midpoint_ij_vec)
-            length_midpoint = np.linalg.norm(midpoint_i_seg).round(4)
-
-            # If the intersection of great circles a and b is closer to i than the midpoint of i and j,
-            # then these intersection points do not form a valid tile boundary.
-
-            # If the intersection is further away, then it is a valid tile boundary.
-            if (length_intersection > length_midpoint):
-                tile_boundary = [shortest_intersection[0], second_shortest_intersection[0]]
-                tile_boundaries[index_i].append(tile_boundary)
-
+    tile_boundaries = get_fb_tile_boundaries(tile_count)
 
     # Convert spherical coordinates to Cartesian coordinates for plotting
     x = [vec.x for vec in tile_centers_vectors]
@@ -493,28 +378,125 @@ def save_tiling_visualization_video(tile_count: int, output_path: Path, horizont
     plotter.show_axes_all()
     plotter.remove_bounds_axes()
 
-    # Open movie file
-    video_file_name = os.path.join(str(output_path), f'fibonacci_lattice-{tile_count}_tiles.mp4')
-    plotter.open_movie(video_file_name)
-
-
     horizontal_pan_val = 0
     vertical_pan_val = 0
+    file_name_suffix = ""
 
     if (horizontal_pan and vertical_pan):
         horizontal_pan_val = 0.5
         vertical_pan_val = 0.5
+        file_name_suffix = "-vertical_horizontal"
     elif (horizontal_pan):
         horizontal_pan_val = 1
+        file_name_suffix = "-horizontal"
     elif (vertical_pan):
         vertical_pan_val = 1
+        file_name_suffix = "-vertical"
 
-    # Rotate camera and write frames
-    for i in range(180):
-        plotter.camera.azimuth += horizontal_pan_val  # Rotate camera 1 degree
-        plotter.camera.elevation += vertical_pan_val
-        plotter.write_frame()
+    try:
+        # Open movie file
+        video_file_name = os.path.join(str(output_path), f'fibonacci_lattice-{tile_count}_tiles{file_name_suffix}.mp4')
+        plotter.open_movie(video_file_name)
+
+        # Rotate camera and write frames
+        for i in range(180):
+            plotter.camera.azimuth += horizontal_pan_val  # Rotate camera 1 degree
+            plotter.camera.elevation += vertical_pan_val
+            plotter.write_frame()
+        
+        print(f"Video saved: {video_file_name}")
+    except Exception as e:
+        print(f"Error saving PNG: {e}")
 
     plotter.close()
 
-    print(f"Video saved: {video_file_name}")
+
+def save_tiling_visualization_image(
+        tile_count: int,
+        output_path: Path,
+        camera_position: Tuple[float, float, float]=(0, 0, 20),
+        camera_up: Tuple[float, float, float]= (0, 1, 0),
+        camera_focal_point: Tuple[float, float, float] = (0,0,0)
+        ):
+    """Saves a video of the tiling on a sphere for fibonacci lattice.
+    
+    Args:
+        entropy_value: The list of entropy values.
+        output_path: Path for output video file.
+        config: Optional visualization configuration.
+    """
+
+     # Grab tile center points and tile boundaries.
+    tile_centers_vectors = generate_fibonacci_lattice(tile_count)
+    tile_boundaries = get_fb_tile_boundaries(tile_count)
+
+    # Convert spherical coordinates to Cartesian coordinates for plotting
+    x = [vec.x for vec in tile_centers_vectors]
+    y = [vec.y for vec in tile_centers_vectors]
+    z = [vec.z for vec in tile_centers_vectors]
+
+    # Extract lines for tile boundary
+    tile_boundary_list = []
+    for boundaries in tile_boundaries.values():
+        for boundary in boundaries:
+            tile_boundary_list.append(boundary)
+
+    pv.start_xvfb()  # Start the virtual framebuffer
+
+    sphere_radius = 1 # Change the radius here
+    sphere_opacity = 0.3  # Change the opacity here
+    sphere = pv.Sphere(radius=sphere_radius)
+    sphere.opacity = sphere_opacity
+    sphere.color = 'grey'
+
+    # Generate points for each arc in the boundaries
+    num_points = 50  # Number of points on the arc
+    t_values = np.linspace(0, 1, num_points)
+
+    arc_points_list = []
+    line_segments = [] #redefine line_segments.
+    line_segment_count = 0 #keep track of segment number.
+
+    for boundary in tile_boundary_list:
+        vec_start, vec_end = boundary
+        arc_points = np.array([spherical_interpolation(vec_start, vec_end, t) for t in t_values])
+        for i in range(len(arc_points) - 1):
+            arc_points_list.extend(arc_points[i:i+2]) #add the two points of the segment.
+            line_segments.append([2, line_segment_count*2, line_segment_count*2+1]) #create a line segment.
+            line_segment_count +=1
+
+    # Create PolyData for lines
+    lines = pv.PolyData(np.array(arc_points_list)) #create the points.
+    lines.lines = np.array(line_segments).flatten() #define the lines.
+
+    # Create PolyData for tile centers
+    points = pv.PolyData(np.column_stack((x, y, z)))
+    points['colors'] = np.array([[255, 0, 0]] * len(x))  # Red points
+
+    # Create plotter
+    plotter = pv.Plotter(off_screen=True)
+    plotter.add_mesh(sphere)
+    plotter.add_mesh(lines, color='black', line_width=2)
+    plotter.add_mesh(points, color='red', point_size=10) #plot tile centers
+
+    # Set camera view
+    plotter.camera.position = camera_position
+    plotter.camera.up = camera_up
+    plotter.camera.focal_point = camera_focal_point
+
+    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}"
+
+    plotter.enable_parallel_projection()
+    plotter.show_axes_all()
+    plotter.remove_bounds_axes()
+
+    # Create filename
+    png_file_name = os.path.join(str(output_path), f'fibonacci_lattice-{tile_count}_tiles{file_name_suffix}.png')
+
+    try:
+        plotter.screenshot(png_file_name)
+        print(f"PNG saved: {png_file_name}")
+    except Exception as e:
+        print(f"Error saving PNG: {e}")
+
+    plotter.close()

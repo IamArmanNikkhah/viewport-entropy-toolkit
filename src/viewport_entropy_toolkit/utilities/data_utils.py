@@ -18,7 +18,7 @@ import pandas as pd
 from pathlib import Path
 
 from viewport_entropy_toolkit import Point, RadialPoint, Vector, ValidationError
-
+from entropy_utils import generate_fibonacci_lattice
 
 def validate_video_dimensions(width: int, height: int) -> None:
     """Validates video dimensions.
@@ -322,3 +322,136 @@ def spherical_interpolation(v1: Vector, v2: Vector, t: float) -> np.ndarray:
 
     # Compute slerp
     return (np.sin((1 - t) * theta) * p1 + np.sin(t * theta) * p2) / np.sin(theta)
+
+def get_fb_tile_boundaries(tile_count: int) -> Dict:
+    """Perform spherical linear interpolation (slerp) between two points on the sphere (takes the shorter path).
+    
+    Args:
+        tile_count: The number of tiles in the fibonacci lattice.
+
+    Returns:
+        Dict: A dictionary where each tile index has a list of tile boundaries.
+
+    Raises:
+        ValidationError: Error if tile count is less than 1.
+    """
+
+    if (tile_count <= 0):
+        raise ValidationError("Tile counts cannot be less than 1 for to visualize tiling!")
+
+    # Grab tile center points
+    tile_centers_vectors = generate_fibonacci_lattice(tile_count)
+    tile_boundaries = {}
+
+    for index_i in range(len(tile_centers_vectors)):
+        tile_center_i = tile_centers_vectors[index_i]
+        tile_boundaries[index_i] = []
+
+        neighbors = []
+        great_circle_vectors = {}
+        for index_j in range(0, len(tile_centers_vectors)):
+            if (index_j == index_i):
+                continue
+
+            tile_center_j = tile_centers_vectors[index_j]
+
+
+            # Find the vector between the two tile centers
+            line_segment = get_line_segment(tile_center_i, tile_center_j)
+            line_vector = Vector(line_segment[0], line_segment[1], line_segment[2])
+
+            # Compute the length of the line segment
+            length = np.linalg.norm(line_segment)
+            neighbors.append([index_j, length])
+
+            # Calculate the midpoint of the line between the two centers
+            midpoint = np.array([(tile_center_i.x + tile_center_j.x) / 2, (tile_center_i.y + tile_center_j.y) / 2, (tile_center_i.z + tile_center_j.z) / 2])
+
+            # Normalize the midpoint to project it onto the sphere's surface
+            midpoint = normalize(midpoint)
+            # Grab the perpendicular segment to the line segment that uses the plane tangeant to the sphere at the midpoint.
+            perp_segment = find_perpendicular_on_tangent_plane(line_segment, midpoint)
+            perp_vector = Vector(perp_segment[0], perp_segment[1], perp_segment[2])
+
+            # We use the normal vector of the plane of the great circle.
+            # This plane passes through the center of the sphere and defines the great circle by its intersection with the sphere.
+            great_circle_vectors[index_j] = line_vector
+
+        neighbors.sort(key=lambda x: x[1])
+        smallest_distance = neighbors[0][1]
+        nearest_tile_boundaries = {}
+
+        for index_j in range(len(neighbors)):
+            neighbor_j = neighbors[index_j]
+            if (neighbor_j[1] >= smallest_distance * 1.7):
+                break
+
+            tile_index_j = neighbor_j[0]
+            tile_center_j = tile_centers_vectors[tile_index_j]
+            great_circle_j = great_circle_vectors[tile_index_j]
+
+            intersections = []
+
+            for index_k in range(len(neighbors)):
+                neighbor_k = neighbors[index_k]
+                if (index_k == index_j):
+                    continue
+                if (neighbor_k[1] >= smallest_distance * 1.7):
+                    break
+
+                tile_index_k = neighbor_k[0]
+                tile_center_k = tile_centers_vectors[tile_index_k]
+                great_circle_k = great_circle_vectors[tile_index_k]
+
+                p1, p2 = great_circle_intersection(np.array([great_circle_j.x, great_circle_j.y, great_circle_j.z]), np.array([great_circle_k.x, great_circle_k.y, great_circle_k.z]))
+
+                p1_vec = Vector(p1[0], p1[1], p1[2])
+                p2_vec = Vector(p2[0], p2[1], p2[2])
+
+                intersection_vector = find_nearest_point(p1_vec, p2_vec, tile_center_i)
+
+
+                intersection_i_seg = get_line_segment(tile_center_i, intersection_vector)
+                length_i = np.linalg.norm(intersection_i_seg).round(4)
+
+                intersections.append([intersection_vector, length_i, tile_index_k])
+
+            if (len(intersections) < 2):
+                continue
+
+            intersections.sort(key=lambda x: x[1])
+
+            # Check if the two shortest intersection points are shorter than the intersection of their great circles.
+            shortest_intersection = intersections[0]
+            second_shortest_intersection = intersections[1]
+
+            tile_index_a = shortest_intersection[2]
+            tile_index_b = second_shortest_intersection[2]
+
+            great_circle_a = great_circle_vectors[tile_index_a]
+            great_circle_b = great_circle_vectors[tile_index_b]
+
+            p1, p2 = great_circle_intersection(np.array([great_circle_a.x, great_circle_a.y, great_circle_a.z]), np.array([great_circle_b.x, great_circle_b.y, great_circle_b.z]))
+
+            p1_vec = Vector(p1[0], p1[1], p1[2])
+            p2_vec = Vector(p2[0], p2[1], p2[2])
+
+            intersection_vector = find_nearest_point(p1_vec, p2_vec, tile_center_i)
+
+            intersection_i_seg = get_line_segment(tile_center_i, intersection_vector)
+            length_intersection = np.linalg.norm(intersection_i_seg).round(4)
+            midpoint_ij = np.array([(tile_center_i.x + tile_center_j.x) / 2, (tile_center_i.y + tile_center_j.y) / 2, (tile_center_i.z + tile_center_j.z) / 2])
+            midpoint_ij = normalize(midpoint_ij)
+            midpoint_ij_vec = Vector(midpoint_ij[0], midpoint_ij[1], midpoint_ij[2])
+            midpoint_i_seg = get_line_segment(tile_center_i, midpoint_ij_vec)
+            length_midpoint = np.linalg.norm(midpoint_i_seg).round(4)
+
+            # If the intersection of great circles a and b is closer to i than the midpoint of i and j,
+            # then these intersection points do not form a valid tile boundary.
+
+            # If the intersection is further away, then it is a valid tile boundary.
+            if (length_intersection > length_midpoint):
+                tile_boundary = [shortest_intersection[0], second_shortest_intersection[0]]
+                tile_boundaries[index_i].append(tile_boundary)
+    
+    return tile_boundaries

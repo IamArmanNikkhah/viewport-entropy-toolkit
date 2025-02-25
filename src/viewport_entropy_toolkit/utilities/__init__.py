@@ -16,6 +16,7 @@ from .data_utils import (
     get_line_segment,
     find_nearest_point,
     spherical_interpolation,
+    get_fb_tile_boundaries,
 )
 
 from .entropy_utils import (
@@ -38,7 +39,8 @@ from .visualization_utils import (
     create_animation,
     save_video,
     save_graph,
-    save_tiling_visualization_video
+    save_tiling_visualization_video,
+    save_tiling_visualization_image,
 )
 
 __all__ = [
@@ -54,6 +56,7 @@ __all__ = [
     'get_line_segment',
     'find_nearest_point',
     'spherical_interpolation',
+    'get_fb_tile_boundaries',
     
     # Entropy utilities
     'vector_angle_distance',
@@ -72,5 +75,8 @@ __all__ = [
     'PlotManager',
     'VisualizationConfig',
     'create_animation',
-    'save_video'
+    'save_video',
+    'save_graph',
+    'save_tiling_visualization_video',
+    'save_tiling_visualization_image',
 ]
