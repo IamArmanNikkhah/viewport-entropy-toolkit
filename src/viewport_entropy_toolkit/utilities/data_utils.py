@@ -18,7 +18,7 @@ import pandas as pd
 from pathlib import Path
 
 from viewport_entropy_toolkit import Point, RadialPoint, Vector, ValidationError
-from entropy_utils import generate_fibonacci_lattice
+from .entropy_utils import generate_fibonacci_lattice
 
 def validate_video_dimensions(width: int, height: int) -> None:
     """Validates video dimensions.
