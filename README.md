@@ -39,6 +39,14 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+### Headless Environments (e.g., Google Colab, servers)
+
+If you are running this package in a headless environment and using features that require 3D rendering, you will need to install XVFB:
+
+```bash
+sudo apt-get install -y xvfb
+```
+
 ## Quick Start
 
 Here's a simple example to get you started:
