@@ -9,7 +9,13 @@ from .data_utils import (
     pixel_to_spherical,
     process_viewport_data,
     format_trajectory_data,
-    validate_video_dimensions
+    validate_video_dimensions,
+    normalize,
+    find_perpendicular_on_tangent_plane,
+    great_circle_intersection,
+    get_line_segment,
+    find_nearest_point,
+    spherical_interpolation,
 )
 
 from .entropy_utils import (
@@ -30,7 +36,9 @@ from .visualization_utils import (
     PlotManager,
     VisualizationConfig,
     create_animation,
-    save_video
+    save_video,
+    save_graph,
+    save_tiling_visualization_video
 )
 
 __all__ = [
@@ -40,6 +48,12 @@ __all__ = [
     'process_viewport_data',
     'format_trajectory_data',
     'validate_video_dimensions',
+    'normalize',
+    'find_perpendicular_on_tangent_plane',
+    'great_circle_intersection',
+    'get_line_segment',
+    'find_nearest_point',
+    'spherical_interpolation',
     
     # Entropy utilities
     'vector_angle_distance',

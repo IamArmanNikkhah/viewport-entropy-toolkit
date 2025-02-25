@@ -6,6 +6,7 @@ matplotlib>=3.4.0,<4.0.0
 # Visualization
 seaborn>=0.11.0,<0.13.0  # For enhanced plotting
 ffmpeg-python>=0.2.0  # For video generation
+pyvista>=0.44.2
 
 # Data processing
 scipy>=1.7.0,<2.0.0  # For scientific computations

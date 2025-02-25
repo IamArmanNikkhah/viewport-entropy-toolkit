@@ -204,3 +204,121 @@ def format_trajectory_data(
     vectors_df = pd.DataFrame(vectors_dict)
     
     return points_df, vectors_df
+
+def normalize(v: np.ndarray) -> np.ndarray:
+    """Normalizes a vector.
+
+Args:
+    v: A np.ndarray for a vector.
+
+Returns:
+    np.ndarray: The normalized vector.
+"""
+    return v / np.linalg.norm(v)
+
+def find_perpendicular_on_tangent_plane(vec: np.ndarray, midpoint: np.ndarray) -> np.ndarray:
+    """
+    Find a vector perpendicular to `vec` that lies on the tangent plane at the midpoint on the sphere.
+
+    Args:
+        vec: Vector between two points on the sphere.
+        midpoint: Midpoint between the two tile centers (point on the sphere).
+    Returns:
+        np.ndarray: A vector perpendicular to `vec` on the tangent plane at the midpoint.
+    """
+    # Normalize the midpoint to get the radial vector
+    radial_vec = normalize(midpoint)
+
+    # Compute the cross product between the radial vector and the vector `vec`
+    perp_vec = np.cross(radial_vec, vec)
+
+    # Normalize the perpendicular vector to ensure it lies on the tangent plane
+    perp_vec = normalize(perp_vec)
+
+    return perp_vec
+
+def great_circle_intersection(n1: np.ndarray, n2: np.ndarray) -> np.ndarray:
+    """
+    Calculate the intersection points of two great circles on a unit sphere.
+
+    Args:
+        n1: Normal vector of the first great circle.
+        n2: Normal vector of the second great circle.
+    Returns:
+        Two intersection points on the unit sphere (each is a 3D vector).
+    """
+    # Normalize the normal vectors (ensures they are unit vectors)
+    n1 = normalize(n1)
+    n2 = normalize(n2)
+
+    # Find the direction of the line of intersection (cross product of the two normal vectors)
+    line_direction = np.cross(n1, n2)
+    line_direction = normalize(line_direction)  # Normalize the direction vector
+
+    # The two intersection points are the normalized line direction and its inverse
+    p1 = line_direction
+    p2 = -line_direction
+
+    return p1, p2
+
+def get_line_segment(v1: Vector, v2: Vector) -> np.ndarray:
+    """
+    Calculate the line segment between two vectors.
+
+    Args:
+        v1: First vector.
+        v2: Second vector.
+    Returns:
+        np.ndarray: the line segment between the vectors.
+    """
+    line_segment = np.array([v1.x - v2.x, v1.y - v2.y, v1.z - v2.z])
+
+    return line_segment
+
+def find_nearest_point(v1: Vector, v2: Vector, compare_vector: Vector) -> Vector:
+    """
+    Calculate the nearest point to the compared point.
+
+    Args:
+        p1: First vector.
+        p2: Second vector.
+        compare_vector: The point to compare.
+    Returns:
+        The nearest vector.
+    """
+    v1_i_seg = get_line_segment(compare_vector, v1)
+    v2_i_seg = get_line_segment(compare_vector, v2)
+    length_i_v1 = np.linalg.norm(v1_i_seg).round(4)
+    length_i_v2 = np.linalg.norm(v2_i_seg).round(4)
+    
+    if (length_i_v1 < length_i_v2):
+        return v1
+    else:
+        return v2
+
+def spherical_interpolation(v1: Vector, v2: Vector, t: float) -> np.ndarray:
+    """Perform spherical linear interpolation (slerp) between two points on the sphere (takes the shorter path).
+    
+    Args:
+        v1: The Vector representing the first point on the sphere.
+        v2: The Vector representing the second point on the sphere.
+
+    Returns:
+        np.ndarray: An array for the vector of the spherical linear interpolation.
+    """
+    p1 = np.array([v1.x, v1.y, v1.z])
+    p2 = np.array([v2.x, v2.y, v2.z])
+
+    # Normalize the vectors
+    p1 = normalize(p1)
+    p2 = normalize(p2)
+
+    dot_product = np.dot(p1, p2)
+    # Clip dot product to avoid numerical errors
+    dot_product = np.clip(dot_product, -1.0, 1.0)
+
+    # Calculate angle between vectors
+    theta = np.arccos(dot_product)
+
+    # Compute slerp
+    return (np.sin((1 - t) * theta) * p1 + np.sin(t * theta) * p2) / np.sin(theta)
