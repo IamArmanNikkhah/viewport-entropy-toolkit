@@ -701,15 +701,12 @@ def compute_fb_tile_areas(tile_count: int) -> tuple[dict[float], dict[float]]:
     fraction_of_sphere_dict = {}
     tile_area_dict = {}
     total_sphere_area = 4 * np.pi
-    total_fraction = 0
 
     for tile_boundaries_index, tile_boundaries in tile_boundaries_dict.items():
         tile_area = compute_spherical_polygon_area(tile_boundaries)
         tile_area_dict[tile_boundaries_index] = tile_area
 
         fraction_of_sphere = tile_area / total_sphere_area
-        total_fraction += fraction_of_sphere
-
         fraction_of_sphere_dict[tile_boundaries_index] = fraction_of_sphere
 
     return tile_area_dict, fraction_of_sphere_dict
@@ -736,15 +733,12 @@ def compute_lat_lon_tile_areas(num_tiles_horizontal: int, num_tiles_vertical: in
     fraction_of_sphere_dict = {}
     tile_area_dict = {}
     total_sphere_area = 4 * np.pi
-    total_fraction = 0
 
     for tile_boundaries_index, tile_boundaries in tile_boundaries_dict.items():
         tile_area = compute_spherical_polygon_area(tile_boundaries)
         tile_area_dict[tile_boundaries_index] = tile_area
 
         fraction_of_sphere = tile_area / total_sphere_area
-        total_fraction += fraction_of_sphere
-
         fraction_of_sphere_dict[tile_boundaries_index] = fraction_of_sphere
 
     return tile_area_dict, fraction_of_sphere_dict
