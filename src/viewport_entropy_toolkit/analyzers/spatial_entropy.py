@@ -17,11 +17,11 @@ from datetime import datetime
 
 from ..config import AnalyzerConfig, DEFAULT_OUTPUT_FORMATS
 from ..utilities.data_utils import (
+    generate_fibonacci_lattice,
     process_viewport_data,
     format_trajectory_data
 )
 from ..utilities.entropy_utils import (
-    generate_fibonacci_lattice,
     compute_spatial_entropy,
     EntropyConfig
 )
