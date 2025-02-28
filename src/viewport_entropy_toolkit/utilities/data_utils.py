@@ -188,7 +188,7 @@ def get_fb_tile_boundaries(tile_count: int) -> Dict:
     
     return tile_boundaries
 
-def get_lat_lon_tiles(num_tiles_horizontal: int, num_tiles_vertical: int, radius: float = 1.0) -> dict[list[Vector]]:
+def get_lat_lon_tiles(num_tiles_horizontal: int, num_tiles_vertical: int, radius: float = 1.0) -> Dict[List[Vector]]:
     """Generate a set of tile boundaries for a latitude-longitude lattice, with triangular tiles at poles."""
     lat_step = 180 / num_tiles_vertical  # Latitude step size
     lon_step = 360 / num_tiles_horizontal  # Longitude step size
@@ -527,7 +527,7 @@ def spherical_interpolation(v1: Vector, v2: Vector, t: float) -> np.ndarray:
     # Compute slerp
     return (np.sin((1 - t) * theta) * p1 + np.sin(t * theta) * p2) / np.sin(theta)
 
-def get_tile_corners(tile_boundaries: list[list[Vector]]) -> list[Vector]:
+def get_tile_corners(tile_boundaries: List[List[Vector]]) -> List[Vector]:
     """Get tile corners that follows edge order given a list of tile boundaries. This means that each consecutive pair is an edge on the tile.
     
     Args:
@@ -574,7 +574,7 @@ def get_tile_corners(tile_boundaries: list[list[Vector]]) -> list[Vector]:
 
     return tile_corners
 
-def triangulate_spherical_polygon(tile_corners: list[Vector]) -> list[list[Vector]]:
+def triangulate_spherical_polygon(tile_corners: List[Vector]) -> List[List[Vector]]:
     """
     Triangulate a spherical polygon by using a fan method.
     - The first point is used as the fixed anchor.
@@ -654,7 +654,7 @@ def calculate_spherical_triangle_area(P1: Vector, P2: Vector, P3: Vector, radius
     # Surface area of the spherical triangle
     return E * (radius ** 2)
 
-def compute_spherical_polygon_area(tile_boundaries: list[list[Vector]], radius=1.0) -> float:
+def compute_spherical_polygon_area(tile_boundaries: List[List[Vector]], radius=1.0) -> float:
     """
     Compute the total area of a spherical polygon by summing the areas of its triangulated parts.
 
@@ -677,7 +677,7 @@ def compute_spherical_polygon_area(tile_boundaries: list[list[Vector]], radius=1
 
     return total_area
 
-def compute_fb_tile_areas(tile_count: int) -> tuple[dict[float], dict[float]]:
+def compute_fb_tile_areas(tile_count: int) -> Tuple[Dict[float], Dict[float]]:
     """
     Compute the fraction of the sphere each tile occupies and the tile areas.
 
@@ -709,7 +709,7 @@ def compute_fb_tile_areas(tile_count: int) -> tuple[dict[float], dict[float]]:
 
     return tile_area_dict, fraction_of_sphere_dict
 
-def compute_lat_lon_tile_areas(num_tiles_horizontal: int, num_tiles_vertical: int) -> tuple[dict[float], dict[float]]:
+def compute_lat_lon_tile_areas(num_tiles_horizontal: int, num_tiles_vertical: int) -> Tuple[Dict[float], Dict[float]]:
     """
     Compute the fraction of the sphere each tile occupies and the tile areas.
 

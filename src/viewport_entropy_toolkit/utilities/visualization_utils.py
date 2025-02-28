@@ -500,7 +500,7 @@ def save_fb_tiling_visualization_video(tile_count: int, output_dir: Path, horizo
     plotter.close()
 
 def save_tiling_visualization_image(
-        tile_boundaries: dict[list[Vector]],
+        tile_boundaries: Dict[List[Vector]],
         output_dir: Path,
         output_prefix: str="",
         camera_position: Tuple[float, float, float]=(0, 0, 5),
@@ -577,7 +577,7 @@ def save_tiling_visualization_image(
     plotter.close()
     
 def save_tiling_visualization_video(
-        tile_boundaries: dict[list[Vector]],
+        tile_boundaries: Dict[List[Vector]],
         output_dir: Path,
         output_prefix: str="",
         horizontal_pan: bool=True,
