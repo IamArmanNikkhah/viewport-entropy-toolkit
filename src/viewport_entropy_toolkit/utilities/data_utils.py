@@ -188,7 +188,7 @@ def get_fb_tile_boundaries(tile_count: int) -> Dict:
     
     return tile_boundaries
 
-def get_lat_lon_tiles(num_tiles_horizontal: int, num_tiles_vertical: int, radius: float = 1.0) -> Dict[List[Vector]]:
+def get_lat_lon_tiles(num_tiles_horizontal: int, num_tiles_vertical: int, radius: float = 1.0) -> Dict[str, List[Vector]]:
     """Generate a set of tile boundaries for a latitude-longitude lattice, with triangular tiles at poles."""
     lat_step = 180 / num_tiles_vertical  # Latitude step size
     lon_step = 360 / num_tiles_horizontal  # Longitude step size
@@ -677,7 +677,7 @@ def compute_spherical_polygon_area(tile_boundaries: List[List[Vector]], radius=1
 
     return total_area
 
-def compute_fb_tile_areas(tile_count: int) -> Tuple[Dict[float], Dict[float]]:
+def compute_fb_tile_areas(tile_count: int) -> Tuple[Dict[int, float], Dict[int, float]]:
     """
     Compute the fraction of the sphere each tile occupies and the tile areas.
 
@@ -709,7 +709,7 @@ def compute_fb_tile_areas(tile_count: int) -> Tuple[Dict[float], Dict[float]]:
 
     return tile_area_dict, fraction_of_sphere_dict
 
-def compute_lat_lon_tile_areas(num_tiles_horizontal: int, num_tiles_vertical: int) -> Tuple[Dict[float], Dict[float]]:
+def compute_lat_lon_tile_areas(num_tiles_horizontal: int, num_tiles_vertical: int) -> Tuple[Dict[int, float], Dict[int, float]]:
     """
     Compute the fraction of the sphere each tile occupies and the tile areas.
 
