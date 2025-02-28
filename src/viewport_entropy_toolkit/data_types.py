@@ -172,22 +172,13 @@ class Vector:
         """
         return (self.x, self.y, self.z)
     
-    def round(self, decimals: int=4):
-        """Rounds the values in this vector to a given number of decimals.
-
-        Args:
-            decimals: The number of decimals to round to.
-
-        Raises:
-            ValidationError: If decimals is less than 0.
-        """
-
-        if (decimals < 0):
-            raise ValidationError("Decimals must be greater than 0!")
-
-        self.x = np.round(self.x, decimals=decimals)
-        self.y = np.round(self.y, decimals=decimals)
-        self.z = np.round(self.z, decimals=decimals)
+    def round(self, decimals: int):
+        # Return a new instance with rounded values
+        return Vector(
+            x=np.round(self.x, decimals=decimals),
+            y=np.round(self.y, decimals=decimals),
+            z=np.round(self.z, decimals=decimals)
+        )
 
     @classmethod
     def from_spherical(cls, lon: float, lat: float) -> 'Vector':
