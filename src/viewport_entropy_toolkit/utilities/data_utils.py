@@ -215,8 +215,6 @@ def get_lat_lon_tiles(num_tiles_horizontal: int, num_tiles_vertical: int, radius
 
             index_key = f"{i}_{j}"
 
-            print(f"lat1: {lat1}, lon1: {lon1}")
-
             if lat2 >= 90:  # North Pole Region (Triangular Tiles)
                 lat_lon_tile_boundaries[index_key] = [[p1, p2], [p1, north_pole], [p2, north_pole]]  # Triangle with the pole
             elif lat1 <= -90:  # South Pole Region (Triangular Tiles)
