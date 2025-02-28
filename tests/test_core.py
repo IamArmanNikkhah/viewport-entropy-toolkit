@@ -5,6 +5,7 @@ from viewport_entropy_toolkit.data_types import Point, RadialPoint, Vector
 from viewport_entropy_toolkit.analyzers.spatial_entropy import SpatialEntropyAnalyzer
 from viewport_entropy_toolkit.analyzers.transition_entropy import TransitionEntropyAnalyzer
 from viewport_entropy_toolkit.config import AnalyzerConfig
+from viewport_entropy_toolkit.utilities.visualization_utils import save_tiling_visualization_image
 
 def test_point_creation():
     """Test Point class creation."""

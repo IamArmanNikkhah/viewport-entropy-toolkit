@@ -6,7 +6,6 @@ generating Fibonacci lattices, calculating angular distances, and computing spat
 
 Functions:
     compute_spatial_entropy: Calculates spatial entropy for a set of vectors.
-    generate_fibonacci_lattice: Generates uniformly distributed points on a sphere.
     calculate_tile_weights: Computes weight distribution across tiles.
     vector_operations: Various vector calculation utilities.
 """
@@ -86,40 +85,6 @@ def find_angular_distances(
         for i, center in enumerate(tile_centers)
     ])
     return distances
-
-
-def generate_fibonacci_lattice(num_points: int) -> List[Vector]:
-    """Generates Fibonacci lattice points on a sphere.
-    
-    Args:
-        num_points: Number of points to generate.
-    
-    Returns:
-        List[Vector]: List of unit vectors representing lattice points.
-    
-    Raises:
-        ValidationError: If number of points is invalid.
-    """
-    if num_points <= 0:
-        raise ValidationError("Number of points must be positive")
-        
-    phi = (1 + np.sqrt(5)) / 2  # Golden ratio
-    vectors = []
-    
-    N = int(num_points / 2)
-    
-    for i in range(-N, N + 1):
-        lat = np.arcsin(2 * i / (2 * N + 1)) * 180 / np.pi
-        lon = (i % phi) * 360 / phi
-        
-        # Normalize longitude to [-180, 180]
-        lon = ((lon + 180) % 360) - 180
-        
-        # Convert to vector
-        vector = Vector.from_spherical(lon, lat)
-        vectors.append(vector)
-    
-    return vectors
 
 def find_nearest_tile(
         vector: Vector,
