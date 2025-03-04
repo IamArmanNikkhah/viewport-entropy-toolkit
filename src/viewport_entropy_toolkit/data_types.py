@@ -171,6 +171,14 @@ class Vector:
             Tuple[float, float, float]: A tuple of (x, y, z) coordinates.
         """
         return (self.x, self.y, self.z)
+    
+    def round(self, decimals: int):
+        # Return a new instance with rounded values
+        return Vector(
+            x=np.round(self.x, decimals=decimals),
+            y=np.round(self.y, decimals=decimals),
+            z=np.round(self.z, decimals=decimals)
+        )
 
     @classmethod
     def from_spherical(cls, lon: float, lat: float) -> 'Vector':
