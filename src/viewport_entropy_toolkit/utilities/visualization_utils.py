@@ -15,6 +15,7 @@ Functions:
 """
 
 import os
+import logging
 from typing import Dict, List, Tuple, Optional, Any
 import numpy as np
 import pandas as pd
@@ -116,8 +117,11 @@ class PlotManager:
         Returns:
             List of plot elements to update.
         """
+
+        logger = logging.getLogger(__name__)
+
         self.clear_plot()
-        
+
         if time_index >= len(entropy_data):
             return [self.time_text]
         
@@ -320,7 +324,7 @@ def save_fb_tiling_visualization_image(
 
      # Grab tile center points and tile boundaries.
     tile_centers_vectors = generate_fibonacci_lattice(tile_count)
-    tile_boundaries = get_fb_tile_boundaries(tile_count)
+    tile_boundaries = get_FB_tile_boundaries(tile_count)
 
     # Convert spherical coordinates to Cartesian coordinates for plotting
     x = [vec.x for vec in tile_centers_vectors]
@@ -407,7 +411,7 @@ def save_fb_tiling_visualization_video(tile_count: int, output_dir: Path, horizo
 
      # Grab tile center points and tile boundaries.
     tile_centers_vectors = generate_fibonacci_lattice(tile_count)
-    tile_boundaries = get_fb_tile_boundaries(tile_count)
+    tile_boundaries = get_FB_tile_boundaries(tile_count)
 
     # Convert spherical coordinates to Cartesian coordinates for plotting
     x = [vec.x for vec in tile_centers_vectors]
