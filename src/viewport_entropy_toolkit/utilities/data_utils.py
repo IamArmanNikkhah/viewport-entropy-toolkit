@@ -254,6 +254,111 @@ def get_ERP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
 
     return ERP_tile_boundaries
 
+def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, radius: float = 1.0) -> Dict[str, List[List[Vector]]]:
+  """
+    Generates the tiles (their boundaries) for CMP tiling. Total number of tiles will be 6 * num_tiles_horizontal * num_tiles_vertical.
+
+    Args:
+        num_tiles_horizontal: The number of horizontal spatial bins to tile a face of the CMP cube with.
+        num_tiles_vertical: The number of vertical spatial bins to tile a face of the CMP cube with.
+        radius: the radius of the circle.
+
+    Returns:
+        Dict: A dictionary where each tile index "i_j" has a list of tile boundaries, where i is horizontal index and j is vertical index.
+
+    Raises:
+        ValidationError: Error if tile count is less than 1.
+    """
+
+  CMP_tile_boundaries = {}
+
+
+
+  horizontal_step = 2 / num_tiles_horizontal
+  vertical_step = 2 / num_tiles_vertical
+
+  # Do the XY plane with Z = 1
+  face_key = "Z=1"
+  for i in range(num_tiles_horizontal):
+    for j in range(num_tiles_vertical):
+      index_key = f"face_{face_key}-{i}_{j}"
+
+      p1 = Vector(-1 + i * horizontal_step, -1 + j * vertical_step, 1)
+      p2 = Vector(-1 + i * horizontal_step, -1 + (j + 1) * vertical_step, 1)
+      p3 = Vector(-1 + (i + 1) * horizontal_step, -1 + (j + 1) * vertical_step, 1)
+      p4 = Vector(-1 + (i + 1) * horizontal_step, -1 + j * vertical_step, 1)
+
+      CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+
+  # Do the XY plane with Z = -1
+  face_key = "Z=-1"
+  for i in range(num_tiles_horizontal):
+    for j in range(num_tiles_vertical):
+      index_key = f"face_{face_key}-{i}_{j}"
+
+      p1 = Vector(-1 + i * horizontal_step, -1 + j * vertical_step, -1)
+      p2 = Vector(-1 + i * horizontal_step, -1 + (j + 1) * vertical_step, -1)
+      p3 = Vector(-1 + (i + 1) * horizontal_step, -1 + (j + 1) * vertical_step, -1)
+      p4 = Vector(-1 + (i + 1) * horizontal_step, -1 + j * vertical_step, -1)
+
+      CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+  # Do the XZ plane with Y = 1
+  face_key = "Y=1"
+  for i in range(num_tiles_horizontal):
+    for j in range(num_tiles_vertical):
+      index_key = f"face_{face_key}-{i}_{j}"
+
+      p1 = Vector(-1 + i * horizontal_step, 1, -1 + j * vertical_step)
+      p2 = Vector(-1 + i * horizontal_step, 1, -1 + (j + 1) * vertical_step)
+      p3 = Vector(-1 + (i + 1) * horizontal_step, 1, -1 + (j + 1) * vertical_step)
+      p4 = Vector(-1 + (i + 1) * horizontal_step, 1, -1 + j * vertical_step)
+
+      CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+  # Do the XZ plane with Y = -1
+  face_key = "Y=-1"
+  for i in range(num_tiles_horizontal):
+    for j in range(num_tiles_vertical):
+      index_key = f"face_{face_key}-{i}_{j}"
+
+      p1 = Vector(-1 + i * horizontal_step, -1, -1 + j * vertical_step)
+      p2 = Vector(-1 + i * horizontal_step, -1, -1 + (j + 1) * vertical_step)
+      p3 = Vector(-1 + (i + 1) * horizontal_step, -1, -1 + (j + 1) * vertical_step)
+      p4 = Vector(-1 + (i + 1) * horizontal_step, -1, -1 + j * vertical_step)
+
+      CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+  # Do the YZ plane with X = 1
+  face_key = "X=1"
+  for i in range(num_tiles_horizontal):
+    for j in range(num_tiles_vertical):
+      index_key = f"face_{face_key}-{i}_{j}"
+
+      p1 = Vector(1, -1 + i * horizontal_step, -1 + j * vertical_step)
+      p2 = Vector(1, -1 + i * horizontal_step, -1 + (j + 1) * vertical_step)
+      p3 = Vector(1, -1 + (i + 1) * horizontal_step, -1 + (j + 1) * vertical_step)
+      p4 = Vector(1, -1 + (i + 1) * horizontal_step, -1 + j * vertical_step)
+
+      CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+  # Do the YZ plane with X = -1
+  face_key = "X=-1"
+  for i in range(num_tiles_horizontal):
+    for j in range(num_tiles_vertical):
+      index_key = f"face_{face_key}-{i}_{j}"
+
+      p1 = Vector(-1, -1 + i * horizontal_step, -1 + j * vertical_step)
+      p2 = Vector(-1, -1 + i * horizontal_step, -1 + (j + 1) * vertical_step)
+      p3 = Vector(-1, -1 + (i + 1) * horizontal_step, -1 + (j + 1) * vertical_step)
+      p4 = Vector(-1, -1 + (i + 1) * horizontal_step, -1 + j * vertical_step)
+
+      CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+
+  return CMP_tile_boundaries
+
 def validate_video_dimensions(width: int, height: int) -> None:
     """Validates video dimensions.
     
@@ -761,6 +866,38 @@ def compute_ERP_tile_areas(num_tiles_horizontal: int, num_tiles_vertical: int) -
     fraction_of_sphere_dict = {}
     tile_area_dict = {}
     total_sphere_area = 4 * np.pi
+
+    for tile_boundaries_index, tile_boundaries in tile_boundaries_dict.items():
+        tile_area = compute_spherical_polygon_area(tile_boundaries)
+        tile_area_dict[tile_boundaries_index] = tile_area
+
+        fraction_of_sphere = tile_area / total_sphere_area
+        fraction_of_sphere_dict[tile_boundaries_index] = fraction_of_sphere
+
+    return tile_area_dict, fraction_of_sphere_dict
+
+def compute_CMP_tile_areas(num_tiles_horizontal: int, num_tiles_vertical: int, radius: float = 1.0) -> Tuple[Dict[int, float], Dict[int, float]]:
+    """
+    Compute the fraction of the sphere each tile occupies and the tile areas.  Total number of tiles will be 6 * num_tiles_horizontal * num_tiles_vertical.
+
+    Args:
+        tile_count (int): Number of tiles.
+        num_tiles_horizontal: The number of horizontal spatial bins to tile a face of the CMP cube with.
+        num_tiles_vertical: The number of vertical spatial bins to tile a face of the CMP cube with.
+        radius: the radius of the circle.
+
+    Returns:
+        tuple: (fraction_of_sphere_dict, tile_area_dict)
+
+    Raises:
+        ValueError: If either num_tiles_horizontal or num_tiles_vertical is not a positive integer.
+    """
+
+    tile_boundaries_dict = get_CMP_tile_boundaries(num_tiles_horizontal, num_tiles_vertical, radius)
+
+    fraction_of_sphere_dict = {}
+    tile_area_dict = {}
+    total_sphere_area = 4 * radius * radius * np.pi
 
     for tile_boundaries_index, tile_boundaries in tile_boundaries_dict.items():
         tile_area = compute_spherical_polygon_area(tile_boundaries)
