@@ -27,7 +27,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError, convert_vectors_to_coordinates
-from .data_utils import generate_fibonacci_lattice, spherical_interpolation, get_fb_tile_boundaries
+from .data_utils import generate_fibonacci_lattice, spherical_interpolation, get_FB_tile_boundaries
 
 @dataclass
 class VisualizationConfig:
