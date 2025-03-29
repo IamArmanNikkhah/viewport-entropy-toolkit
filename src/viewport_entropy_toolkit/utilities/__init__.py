@@ -25,7 +25,7 @@ from .data_utils import (
     angle_at_vertex,
     calculate_spherical_triangle_area,
     compute_spherical_polygon_area,
-    compute_fb_tile_areas,
+    compute_FB_tile_areas,
     compute_ERP_tile_areas,
     compute_CMP_tile_areas,
 )
@@ -77,8 +77,8 @@ __all__ = [
     'angle_at_vertex',
     'calculate_spherical_triangle_area',
     'compute_spherical_polygon_area',
+    'compute_FB_tile_areas',
     'compute_ERP_tile_areas',
-    'compute_fb_tile_areas',
     'compute_CMP_tile_areas',
     
     # Entropy utilities
