@@ -6,8 +6,8 @@ and visualization in spatial entropy analysis.
 
 from .data_utils import (
     generate_fibonacci_lattice,
-    get_fb_tile_boundaries,
-    get_lat_lon_tiles,
+    get_FB_tile_boundaries,
+    get_ERP_tile_boundaries,
     normalize_to_pixel,
     pixel_to_spherical,
     process_viewport_data,
@@ -24,6 +24,8 @@ from .data_utils import (
     angle_at_vertex,
     calculate_spherical_triangle_area,
     compute_spherical_polygon_area,
+    compute_fb_tile_areas,
+    compute_ERP_tile_areas,
 )
 
 from .entropy_utils import (
@@ -54,8 +56,8 @@ from .visualization_utils import (
 __all__ = [
     # Data utilities
     'generate_fibonacci_lattice',
-    'get_fb_tile_boundaries',
-    'get_lat_lon_tiles',
+    'get_FB_tile_boundaries',
+    'get_ERP_tile_boundaries',
     'normalize_to_pixel',
     'pixel_to_spherical',
     'process_viewport_data',
@@ -72,6 +74,8 @@ __all__ = [
     'angle_at_vertex',
     'calculate_spherical_triangle_area',
     'compute_spherical_polygon_area',
+    'compute_ERP_tile_areas',
+    'compute_fb_tile_areas',
     
     # Entropy utilities
     'vector_angle_distance',

@@ -6,13 +6,17 @@ converting between different coordinate systems and processing viewport data.
 
 Functions:
     generate_fibonacci_lattice: Generates uniformly distributed points on a sphere.
-    get_fb_tile_boundaries: Generates the tiles (their boundaries) for nearest-fibonacci-lattice-point tiling.
-    get_lat_lon_tiles: Generates the tiles (their boundaries) for latitude-longitude lattice tiling.
+    get_FB_tile_boundaries: Generates the tiles (their boundaries) for Fibonacci-lattice Voronoi tiling.
+    get_ERP_tile_boundaries: Generates the tiles (their boundaries) for ERP tiling.
     normalize_to_pixel: Converts normalized coordinates to pixel coordinates.
     pixel_to_spherical: Converts pixel coordinates to spherical coordinates.
     process_viewport_data: Processes viewport center trajectory data.
     validate_video_dimensions: Validates video dimensions.
     format_trajectory_data: Formats trajectory data for analysis.
+    compute_ERP_tile_areas: Computes the area for each ERP tile.
+    compute_fb_tile_areas: Computes the area for each FB tile.
+    compute_spherical_polygon_area: Computes the area for a convex tile.
+    calculate_spherical_triangle_area: Computes the area for a spherical triangle.
 """
 
 from typing import List, Tuple, Dict, Optional, Union
@@ -40,7 +44,11 @@ def generate_fibonacci_lattice(num_points: int) -> List[Vector]:
     phi = (1 + np.sqrt(5)) / 2  # Golden ratio
     vectors = []
     
-    N = int(num_points / 2)
+    if (num_points % 2 == 0):
+        num_points -= 1
+        print(f"Warning: The number of points must be odd, so Fibonacci lattice point generation will be done with n={num_points}")
+
+    N = int(np.floor((num_points - 1) / 2))
     
     for i in range(-N, N + 1):
         lat = np.arcsin(2 * i / (2 * N + 1)) * 180 / np.pi
@@ -55,11 +63,11 @@ def generate_fibonacci_lattice(num_points: int) -> List[Vector]:
     
     return vectors
 
-def get_fb_tile_boundaries(tile_count: int) -> Dict:
-    """Perform spherical linear interpolation (slerp) between two points on the sphere (takes the shorter path).
+def get_FB_tile_boundaries(tile_count: int) -> Dict[int, List[List[Vector]]]:
+    """Generates the tiles (their boundaries) for Fibonacci-lattice Voronoi tiling.
     
     Args:
-        tile_count: The number of tiles in the fibonacci lattice.
+        tile_count: The number of tiles in the Fibonacci lattice.
 
     Returns:
         Dict: A dictionary where each tile index has a list of tile boundaries.
@@ -79,14 +87,17 @@ def get_fb_tile_boundaries(tile_count: int) -> Dict:
         tile_center_i = tile_centers_vectors[index_i]
         tile_boundaries[index_i] = []
 
-        neighbors = []
+        # This stores for each neighbor j, the great circle perpendicular to the vector between the current tile and neighbor j at the vector's midpoint.
+        # Each great circle can be thought of as a candidate for the line that a tile boundary sits on.
         great_circle_vectors = {}
+        neighbors = []
+
+        # Extract all of the neighbors of the current tile, and the angular distance between the current tile center and each neighbor's center.
         for index_j in range(0, len(tile_centers_vectors)):
             if (index_j == index_i):
                 continue
 
             tile_center_j = tile_centers_vectors[index_j]
-
 
             # Find the vector between the two tile centers
             line_segment = get_line_segment(tile_center_i, tile_center_j)
@@ -96,23 +107,17 @@ def get_fb_tile_boundaries(tile_count: int) -> Dict:
             length = np.linalg.norm(line_segment)
             neighbors.append([index_j, length])
 
-            # Calculate the midpoint of the line between the two centers
-            midpoint = np.array([(tile_center_i.x + tile_center_j.x) / 2, (tile_center_i.y + tile_center_j.y) / 2, (tile_center_i.z + tile_center_j.z) / 2])
-
-            # Normalize the midpoint to project it onto the sphere's surface
-            midpoint = normalize(midpoint)
-            # Grab the perpendicular segment to the line segment that uses the plane tangeant to the sphere at the midpoint.
-            perp_segment = find_perpendicular_on_tangent_plane(line_segment, midpoint)
-            perp_vector = Vector(perp_segment[0], perp_segment[1], perp_segment[2])
-
-            # We use the normal vector of the plane of the great circle.
+            # This plane is the great circle that is half way between the current tile and this neighbor, 
+            # (i.e. the great circle perpendicular at the midpoint of tile i and j).
+            # We store the normal vector of the plane of the great circle.
             # This plane passes through the center of the sphere and defines the great circle by its intersection with the sphere.
             great_circle_vectors[index_j] = line_vector
 
+        # Sort the other FB lattice points by how close they are to the current tile.
         neighbors.sort(key=lambda x: x[1])
         smallest_distance = neighbors[0][1]
-        nearest_tile_boundaries = {}
 
+        # For each neighbor, compute the candidate tile boundaries.
         for index_j in range(len(neighbors)):
             neighbor_j = neighbors[index_j]
             if (neighbor_j[1] >= smallest_distance * 1.7):
@@ -128,32 +133,41 @@ def get_fb_tile_boundaries(tile_count: int) -> Dict:
                 neighbor_k = neighbors[index_k]
                 if (index_k == index_j):
                     continue
+
+                # If the distance of the current neighbor is larger than 1.7, then that neighbor is too far to affect the tile boundary.
                 if (neighbor_k[1] >= smallest_distance * 1.7):
                     break
 
                 tile_index_k = neighbor_k[0]
-                tile_center_k = tile_centers_vectors[tile_index_k]
                 great_circle_k = great_circle_vectors[tile_index_k]
 
+                # Find the points of intersection between the great circles representing the candidate lines that a tile boundary sits on.
+                # These are the candidate points for corners of the tile.
                 p1, p2 = great_circle_intersection(np.array([great_circle_j.x, great_circle_j.y, great_circle_j.z]), np.array([great_circle_k.x, great_circle_k.y, great_circle_k.z]))
 
                 p1_vec = Vector(p1[0], p1[1], p1[2])
                 p2_vec = Vector(p2[0], p2[1], p2[2])
 
+                # Take the point that is closer to the tile center, the other point is on the opposite side of the sphere.
                 intersection_vector = find_nearest_point(p1_vec, p2_vec, tile_center_i)
 
 
                 intersection_i_seg = get_line_segment(tile_center_i, intersection_vector)
                 length_i = np.linalg.norm(intersection_i_seg).round(4)
 
+                # Add the point as a the candidate tile corner.
                 intersections.append([intersection_vector, length_i, tile_index_k])
 
+            # If there are fewer than 2 intersections, then this neighbor j does not make up a tile boundary with the current tile.
             if (len(intersections) < 2):
                 continue
 
+            # Sort the intersections by distance to the current tile.
             intersections.sort(key=lambda x: x[1])
 
-            # Check if the two shortest intersection points are shorter than the intersection of their great circles.
+            # Check if the two shortest intersection points are closer to the current tile than the intersection of their great circles.
+            # If they are, then that means that the tile boundary is valid.
+            # Otherwise, it means that neighbor j does not make up a tile boundary with the current tile. 
             shortest_intersection = intersections[0]
             second_shortest_intersection = intersections[1]
 
@@ -180,7 +194,6 @@ def get_fb_tile_boundaries(tile_count: int) -> Dict:
 
             # If the intersection of great circles a and b is closer to i than the midpoint of i and j,
             # then these intersection points do not form a valid tile boundary.
-
             # If the intersection is further away, then it is a valid tile boundary.
             if (length_intersection > length_midpoint):
                 tile_boundary = [shortest_intersection[0], second_shortest_intersection[0]]
@@ -188,12 +201,29 @@ def get_fb_tile_boundaries(tile_count: int) -> Dict:
     
     return tile_boundaries
 
-def get_lat_lon_tiles(num_tiles_horizontal: int, num_tiles_vertical: int, radius: float = 1.0) -> Dict[str, List[Vector]]:
-    """Generate a set of tile boundaries for a latitude-longitude lattice, with triangular tiles at poles."""
+def get_ERP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, radius: float = 1.0) -> Dict[str, List[List[Vector]]]:
+    """
+    Generates the tiles (their boundaries) for ERP tiling. Total number of tiles will be 
+    
+    Args:
+        num_tiles_horizontal: The number of horizontal spatial bins (longitudes) to tile the ERP with.
+        num_tiles_vertical: The number of vertical spatial bins (latitudes) to tile the ERP with.
+        radius: the radius of the circle.
+
+    Returns:
+        Dict: A dictionary where each tile index "i_j" has a list of tile boundaries, where i is horizontal index and j is vertical index.
+
+    Raises:
+        ValueError: If either num_tiles_horizontal or num_tiles_vertical is not a positive integer.
+    """
+
+    if num_tiles_horizontal <= 0 or num_tiles_vertical <= 0:
+        raise ValidationError("Number of tiles horizontal and vertical must be positive!")
+
     lat_step = 180 / num_tiles_vertical  # Latitude step size
     lon_step = 360 / num_tiles_horizontal  # Longitude step size
 
-    lat_lon_tile_boundaries = {}
+    ERP_tile_boundaries = {}
 
     # North and South poles
     north_pole = Vector(0, 0, radius)
@@ -216,13 +246,13 @@ def get_lat_lon_tiles(num_tiles_horizontal: int, num_tiles_vertical: int, radius
             index_key = f"{i}_{j}"
 
             if lat2 >= 90:  # North Pole Region (Triangular Tiles)
-                lat_lon_tile_boundaries[index_key] = [[p1, p2], [p1, north_pole], [p2, north_pole]]  # Triangle with the pole
+                ERP_tile_boundaries[index_key] = [[p1, p2], [p1, north_pole], [p2, north_pole]]  # Triangle with the pole
             elif lat1 <= -90:  # South Pole Region (Triangular Tiles)
-                lat_lon_tile_boundaries[index_key] = [[p3, p4],[p3, south_pole], [p4, south_pole]]  # Triangle with the pole
+                ERP_tile_boundaries[index_key] = [[p3, p4],[p3, south_pole], [p4, south_pole]]  # Triangle with the pole
             else:  # Normal Quadrilateral Tiles
-                lat_lon_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+                ERP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
 
-    return lat_lon_tile_boundaries
+    return ERP_tile_boundaries
 
 def validate_video_dimensions(width: int, height: int) -> None:
     """Validates video dimensions.
@@ -656,7 +686,7 @@ def calculate_spherical_triangle_area(P1: Vector, P2: Vector, P3: Vector, radius
 
 def compute_spherical_polygon_area(tile_boundaries: List[List[Vector]], radius=1.0) -> float:
     """
-    Compute the total area of a spherical polygon by summing the areas of its triangulated parts.
+    Compute the total area of a convex spherical polygon by summing the areas of its triangulated parts.
 
     Args:
       tile_boundaries: A list of a tile boundaries. Each tile boundary is a list of two points with the vector representing the point on the sphere.
@@ -694,7 +724,7 @@ def compute_fb_tile_areas(tile_count: int) -> Tuple[Dict[int, float], Dict[int, 
     if tile_count <= 0:
         raise ValidationError("Number of points must be positive!")
 
-    tile_boundaries_dict = get_fb_tile_boundaries(tile_count)
+    tile_boundaries_dict = get_FB_tile_boundaries(tile_count)
 
     fraction_of_sphere_dict = {}
     tile_area_dict = {}
@@ -709,7 +739,7 @@ def compute_fb_tile_areas(tile_count: int) -> Tuple[Dict[int, float], Dict[int, 
 
     return tile_area_dict, fraction_of_sphere_dict
 
-def compute_lat_lon_tile_areas(num_tiles_horizontal: int, num_tiles_vertical: int) -> Tuple[Dict[int, float], Dict[int, float]]:
+def compute_ERP_tile_areas(num_tiles_horizontal: int, num_tiles_vertical: int) -> Tuple[Dict[int, float], Dict[int, float]]:
     """
     Compute the fraction of the sphere each tile occupies and the tile areas.
 
@@ -726,7 +756,7 @@ def compute_lat_lon_tile_areas(num_tiles_horizontal: int, num_tiles_vertical: in
     if num_tiles_horizontal <= 0 or num_tiles_vertical <= 0:
         raise ValidationError("Number of tiles horizontal and vertical must be positive!")
 
-    tile_boundaries_dict = get_lat_lon_tiles(num_tiles_horizontal, num_tiles_vertical)
+    tile_boundaries_dict = get_ERP_tile_boundaries(num_tiles_horizontal, num_tiles_vertical)
 
     fraction_of_sphere_dict = {}
     tile_area_dict = {}
