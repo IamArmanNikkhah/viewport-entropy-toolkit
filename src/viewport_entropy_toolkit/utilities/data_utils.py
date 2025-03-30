@@ -194,7 +194,7 @@ def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7)
                     break
                 
                 # Check that the length between tile center i and intersection with a is shorter than any other length.
-                intersection_a_k_seg = get_line_segment(neighbor_k, intersection_with_a)
+                intersection_a_k_seg = get_line_segment(neighbor_k[0], intersection_with_a)
                 length_a_k = np.linalg.norm(intersection_a_k_seg).round(4)
                 if (length_a_k < length_intersection_a):
                     valid_tile_boundary = False
@@ -211,7 +211,7 @@ def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7)
                     break
 
                 # Check that the length between tile center i and intersection with b is shorter than any other length.
-                intersection_b_k_seg = get_line_segment(neighbor_k, intersection_with_b)
+                intersection_b_k_seg = get_line_segment(neighbor_k[0], intersection_with_b)
                 length_b_k = np.linalg.norm(intersection_b_k_seg).round(4)
                 if (length_b_k < length_intersection_b):
                     valid_tile_boundary = False
