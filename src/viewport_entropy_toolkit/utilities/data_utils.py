@@ -235,6 +235,8 @@ def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7)
                 if (corner_i_1 != corner_j_1) and (seg_length < 0.005):
                     tile_boundaries[index_i][boundary_j_index][1] = corner_i_1
 
+                boundary_j_index += 1
+
             boundary_i_index += 1
 
 
