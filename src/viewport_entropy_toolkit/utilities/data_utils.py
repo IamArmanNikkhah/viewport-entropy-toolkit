@@ -359,7 +359,7 @@ def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
             p3 = Vector(-1, -1 + (i + 1) * horizontal_step, -1 + (j + 1) * vertical_step)
             p4 = Vector(-1, -1 + (i + 1) * horizontal_step, -1 + j * vertical_step)
 
-        CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
 
 
     return CMP_tile_boundaries
