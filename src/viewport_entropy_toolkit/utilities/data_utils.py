@@ -687,8 +687,8 @@ def get_tile_corners(tile_boundaries: List[List[Vector]]) -> List[Vector]:
     edge_dict = {}
 
     for P1, P2 in tile_boundaries:
-        P1_rounded = P1.round(decimals=decimals_to_round)
-        P2_rounded = P2.round(decimals=decimals_to_round)
+        P1_rounded = P1.round(decimals=decimals_to_round, round_down=True)
+        P2_rounded = P2.round(decimals=decimals_to_round, round_down=True)
 
         if P1_rounded not in edge_dict:
             edge_dict[P1_rounded] = [P2_rounded]
@@ -710,16 +710,18 @@ def get_tile_corners(tile_boundaries: List[List[Vector]]) -> List[Vector]:
         # If a corner has less than 2 edges, then remove it and all other references to it.
         if len(edge_dict[corner]) < 2:
             neighbor = edge_dict[corner][0]
-            neighbor_edges = edge_dict[neighbor]
-            neighbor_edges.remove(corner)
-            edge_dict[corner] = None
-            tile_corners_dict[corner] = None
+
             print(f"Corner {corner} was found with only one neighbor, and is being removed (due to it being an extraneous edge).")
-            print(f"This extraneous edge is: ({corner}, {neighbor}), tile: {tile_boundaries}")
+            print(f"This extraneous edge is: ({corner}, {neighbor}), tile: {edge_dict}")
             print("Fibonacci lattice points have only been tested for up to 3200 points." +
         "This is because the method to generate tile boundaries (the actual edges) for area calculation is not robust in the interest of decreasing compute time." +
         "See 'furthest_search_factor' under get_FB_tile_boundaries for more info on how nearby neighbors for candidate tile centers are filtered." +
         "Assigning points to tiles is robust, this is merely for area calculation and visualization purposes.")
+
+            edge_dict[neighbor].remove(corner)
+            del edge_dict[corner]
+            del tile_corners_dict[corner]
+            
 
     next_edge = tile_corners[1]
 

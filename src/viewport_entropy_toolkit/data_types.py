@@ -172,12 +172,22 @@ class Vector:
         """
         return (self.x, self.y, self.z)
     
-    def round(self, decimals: int):
+    def round(self, decimals: int, round_down: bool = False):
         # Return a new instance with rounded values
+        if round_down:
+            factor = 10**decimals
+            rounded_x = np.floor(self.x * factor) / factor
+            rounded_y = np.floor(self.y * factor) / factor
+            rounded_z = np.floor(self.z * factor) / factor
+        else:
+            rounded_x = np.round(self.x, decimals=decimals)
+            rounded_y = np.round(self.y, decimals=decimals)
+            rounded_z = np.round(self.z, decimals=decimals)
+
         return Vector(
-            x=np.round(self.x, decimals=decimals),
-            y=np.round(self.y, decimals=decimals),
-            z=np.round(self.z, decimals=decimals)
+            x=rounded_x,
+            y=rounded_y,
+            z=rounded_z
         )
 
     @classmethod
