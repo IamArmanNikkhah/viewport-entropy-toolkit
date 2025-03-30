@@ -187,7 +187,7 @@ def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7)
             for index_k in range(len(neighbors)):
                 neighbor_k = neighbors[index_k]
                 tile_center_k = tile_centers_vectors[neighbor_k[0]]
-                if (index_k == tile_index_a):
+                if (index_k == tile_index_a) or (index_k == tile_index_b):
                     continue
 
                 # If the distance of the current neighbor is larger than 3 times the furthest_search_factor, then that neighbor is too far to affect the tile boundary.
@@ -201,23 +201,14 @@ def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7)
                     valid_tile_boundary = False
                     break
             
-            # Check intersection with b.
-            for index_k in range(len(neighbors)):
-                neighbor_k = neighbors[index_k]
-                tile_center_k = tile_centers_vectors[neighbor_k[0]]
-                if (index_k == tile_index_b):
-                    continue
-
-                # If the distance of the current neighbor is larger than 3 times the furthest_search_factor, then that neighbor is too far to affect the tile boundary.
-                if (neighbor_k[1] >= smallest_distance * furthest_search_factor * 3):
-                    break
-
                 # Check that the length between tile center i and intersection with b is shorter than any other length.
                 intersection_b_k_seg = get_line_segment(tile_center_k, intersection_with_b)
                 length_b_k = np.linalg.norm(intersection_b_k_seg).round(4)
                 if (length_b_k < length_intersection_b):
                     valid_tile_boundary = False
                     break
+
+                
 
             if valid_tile_boundary:
                 tile_boundary = [shortest_intersection[0], second_shortest_intersection[0]]
