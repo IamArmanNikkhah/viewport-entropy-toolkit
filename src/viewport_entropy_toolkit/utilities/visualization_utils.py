@@ -509,7 +509,9 @@ def save_tiling_visualization_image(
         output_prefix: str="",
         camera_position: Tuple[float, float, float]=(0, 0, 5),
         camera_up: Tuple[float, float, float]= (0, 1, 0),
-        camera_focal_point: Tuple[float, float, float] = (0,0,0)
+        camera_focal_point: Tuple[float, float, float] = (0,0,0),
+        camera_azimuth: int = 0,
+        camera_elevation: int = 0
         ):
     """Saves a video of the tiling on a sphere for fibonacci lattice.
     
@@ -562,6 +564,8 @@ def save_tiling_visualization_image(
     plotter.camera.position = camera_position
     plotter.camera.up = camera_up
     plotter.camera.focal_point = camera_focal_point
+    plotter.camera.azimuth = camera_azimuth
+    plotter.camera.elevation = camera_elevation
 
     file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}-camera_up_{camera_up[0]}_{camera_up[1]}_{camera_up[2]}"
 
@@ -585,7 +589,10 @@ def save_tiling_visualization_video(
         output_dir: Path,
         output_prefix: str="",
         horizontal_pan: bool=True,
-        vertical_pan: bool=True
+        vertical_pan: bool=True,
+        camera_position: Tuple[float, float, float]=(0, 0, 5),
+        camera_up: Tuple[float, float, float]= (0, 1, 0),
+        camera_focal_point: Tuple[float, float, float] = (0,0,0)
         ):
     """Saves a video of the tiling on a sphere for fibonacci lattice.
     
@@ -638,9 +645,9 @@ def save_tiling_visualization_video(
     plotter.add_mesh(lines, color='black', line_width=2)
 
     # Set view and remove axes
-    plotter.camera.position = (0, 0, 5) #adjust camera location.
-    plotter.camera.up = (0, 1, 0)
-    plotter.camera.focal_point = (0,0,0)
+    plotter.camera.position = camera_position
+    plotter.camera.up = camera_up
+    plotter.camera.focal_point = camera_focal_point
 
     plotter.enable_parallel_projection()
     plotter.show_axes_all()
