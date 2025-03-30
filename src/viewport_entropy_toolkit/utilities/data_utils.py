@@ -844,6 +844,9 @@ def compute_FB_tile_areas(tile_count: int) -> Tuple[Dict[int, float], Dict[int, 
 
     furthest_search_factor = 1.7
 
+    if (tile_count > 2000):
+        furthest_search_factor = 1.6
+
     tile_boundaries_dict = get_FB_tile_boundaries(tile_count, furthest_search_factor)
 
     fraction_of_sphere_dict = {}
