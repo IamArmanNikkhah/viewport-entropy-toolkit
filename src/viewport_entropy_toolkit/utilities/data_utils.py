@@ -714,8 +714,8 @@ def get_tile_corners(tile_boundaries: List[List[Vector]]) -> List[Vector]:
             neighbor_edges.remove(corner)
             edge_dict[corner] = None
             tile_corners_dict[corner] = None
-
             print(f"Corner {corner} was found with only one neighbor, and is being removed (due to it being an extraneous edge).")
+            print(f"This extraneous edge is: ({corner}, {neighbor}), tile: {tile_boundaries}")
             print("Fibonacci lattice points have only been tested for up to 3200 points." +
         "This is because the method to generate tile boundaries (the actual edges) for area calculation is not robust in the interest of decreasing compute time." +
         "See 'furthest_search_factor' under get_FB_tile_boundaries for more info on how nearby neighbors for candidate tile centers are filtered." +
