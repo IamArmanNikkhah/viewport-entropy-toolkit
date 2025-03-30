@@ -732,6 +732,7 @@ def get_tile_corners(tile_boundaries: List[List[Vector]]) -> List[Vector]:
             tile_corners_dict[next_edge] = True
     except Exception as e:
         print(f"Exception made on next edge: {next_edge}, tile: {tile_boundaries}")
+        print(f"Edge dict: {edge_dict}")
         print(e)
         print("Fibonacci lattice points have only been tested for up to 3200 points." +
         "This is because the method to generate tile boundaries (the actual edges) for area calculation is not robust in the interest of decreasing compute time." +
