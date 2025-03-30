@@ -176,69 +176,30 @@ def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7)
             tile_index_a = shortest_intersection[2]
             tile_index_b = second_shortest_intersection[2]
 
-            intersection_with_a = shortest_intersection[0]
-            length_intersection_a = shortest_intersection[1]
-            intersection_with_b = second_shortest_intersection[0]
-            length_intersection_b = second_shortest_intersection[1]
+            great_circle_a = great_circle_vectors[tile_index_a]
+            great_circle_b = great_circle_vectors[tile_index_b]
 
-            valid_tile_boundary = True
+            p1, p2 = great_circle_intersection(np.array([great_circle_a.x, great_circle_a.y, great_circle_a.z]), np.array([great_circle_b.x, great_circle_b.y, great_circle_b.z]))
 
-            # Check intersection with a
-            for index_k in range(len(neighbors)):
-                neighbor_k = neighbors[index_k]
-                tile_center_k = tile_centers_vectors[neighbor_k[0]]
-                if (index_k == tile_index_a) or (index_k == tile_index_b):
-                    continue
+            p1_vec = Vector(p1[0], p1[1], p1[2])
+            p2_vec = Vector(p2[0], p2[1], p2[2])
 
-                # If the distance of the current neighbor is larger than 3 times the furthest_search_factor, then that neighbor is too far to affect the tile boundary.
-                if (neighbor_k[1] >= smallest_distance * furthest_search_factor * 3):
-                    break
-                
-                # Check that the length between tile center i and intersection with a is shorter than any other length.
-                intersection_a_k_seg = get_line_segment(tile_center_k, intersection_with_a)
-                length_a_k = np.linalg.norm(intersection_a_k_seg).round(4)
-                if (length_a_k < length_intersection_a):
-                    valid_tile_boundary = False
-                    break
-            
-                # Check that the length between tile center i and intersection with b is shorter than any other length.
-                intersection_b_k_seg = get_line_segment(tile_center_k, intersection_with_b)
-                length_b_k = np.linalg.norm(intersection_b_k_seg).round(4)
-                if (length_b_k < length_intersection_b):
-                    valid_tile_boundary = False
-                    break
+            intersection_vector = find_nearest_point(p1_vec, p2_vec, tile_center_i)
 
-                
+            intersection_i_seg = get_line_segment(tile_center_i, intersection_vector)
+            length_intersection = np.linalg.norm(intersection_i_seg).round(4)
+            midpoint_ij = np.array([(tile_center_i.x + tile_center_j.x) / 2, (tile_center_i.y + tile_center_j.y) / 2, (tile_center_i.z + tile_center_j.z) / 2])
+            midpoint_ij = normalize(midpoint_ij)
+            midpoint_ij_vec = Vector(midpoint_ij[0], midpoint_ij[1], midpoint_ij[2])
+            midpoint_i_seg = get_line_segment(tile_center_i, midpoint_ij_vec)
+            length_midpoint = np.linalg.norm(midpoint_i_seg).round(4)
 
-            if valid_tile_boundary:
+            # If the intersection of great circles a and b is closer to i than the midpoint of i and j,
+            # then these intersection points do not form a valid tile boundary.
+            # If the intersection is further away, then it is a valid tile boundary.
+            if (length_intersection > length_midpoint):
                 tile_boundary = [shortest_intersection[0], second_shortest_intersection[0]]
                 tile_boundaries[index_i].append(tile_boundary)
-
-
-            # great_circle_a = great_circle_vectors[tile_index_a]
-            # great_circle_b = great_circle_vectors[tile_index_b]
-
-            # p1, p2 = great_circle_intersection(np.array([great_circle_a.x, great_circle_a.y, great_circle_a.z]), np.array([great_circle_b.x, great_circle_b.y, great_circle_b.z]))
-
-            # p1_vec = Vector(p1[0], p1[1], p1[2])
-            # p2_vec = Vector(p2[0], p2[1], p2[2])
-
-            # intersection_vector = find_nearest_point(p1_vec, p2_vec, tile_center_i)
-
-            # intersection_i_seg = get_line_segment(tile_center_i, intersection_vector)
-            # length_intersection = np.linalg.norm(intersection_i_seg).round(4)
-            # midpoint_ij = np.array([(tile_center_i.x + tile_center_j.x) / 2, (tile_center_i.y + tile_center_j.y) / 2, (tile_center_i.z + tile_center_j.z) / 2])
-            # midpoint_ij = normalize(midpoint_ij)
-            # midpoint_ij_vec = Vector(midpoint_ij[0], midpoint_ij[1], midpoint_ij[2])
-            # midpoint_i_seg = get_line_segment(tile_center_i, midpoint_ij_vec)
-            # length_midpoint = np.linalg.norm(midpoint_i_seg).round(4)
-
-            # # If the intersection of great circles a and b is closer to i than the midpoint of i and j,
-            # # then these intersection points do not form a valid tile boundary.
-            # # If the intersection is further away, then it is a valid tile boundary.
-            # if (length_intersection > length_midpoint):
-            #     tile_boundary = [shortest_intersection[0], second_shortest_intersection[0]]
-            #     tile_boundaries[index_i].append(tile_boundary)
     
     return tile_boundaries
 
