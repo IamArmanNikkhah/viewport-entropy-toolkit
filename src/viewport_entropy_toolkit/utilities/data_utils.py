@@ -705,6 +705,22 @@ def get_tile_corners(tile_boundaries: List[List[Vector]]) -> List[Vector]:
         if P2_rounded not in tile_corners_dict:
             tile_corners_dict[P2_rounded] = False
     
+    # Check and make sure that each corner has exactly two adjacent corners. If not, remove then and notify the user.
+    for corner in edge_dict:
+        # If a corner has less than 2 edges, then remove it and all other references to it.
+        if len(edge_dict[corner]) < 2:
+            neighbor = edge_dict[corner][0]
+            neighbor_edges = edge_dict[neighbor]
+            neighbor_edges.remove(corner)
+            edge_dict[corner] = None
+            tile_corners_dict[corner] = None
+
+            print(f"Corner {corner} was found with only one neighbor, and is being removed (due to it being an extraneous edge).")
+            print("Fibonacci lattice points have only been tested for up to 3200 points." +
+        "This is because the method to generate tile boundaries (the actual edges) for area calculation is not robust in the interest of decreasing compute time." +
+        "See 'furthest_search_factor' under get_FB_tile_boundaries for more info on how nearby neighbors for candidate tile centers are filtered." +
+        "Assigning points to tiles is robust, this is merely for area calculation and visualization purposes.")
+
     next_edge = tile_corners[1]
 
     try:
@@ -845,7 +861,8 @@ def compute_FB_tile_areas(tile_count: int) -> Tuple[Dict[int, float], Dict[int, 
     furthest_search_factor = 1.7
 
     if (tile_count > 2000):
-        furthest_search_factor = 1.6
+        furthest_search_factor = 1.5
+        print(f"furthest_search_factor was modified to {furthest_search_factor} since tile count is greater than {2000}")
 
     tile_boundaries_dict = get_FB_tile_boundaries(tile_count, furthest_search_factor)
 
