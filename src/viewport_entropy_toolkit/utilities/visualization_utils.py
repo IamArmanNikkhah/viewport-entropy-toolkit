@@ -567,7 +567,7 @@ def save_tiling_visualization_image(
     plotter.camera.azimuth = camera_azimuth
     plotter.camera.elevation = camera_elevation
 
-    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}-camera_up_{camera_up[0]}_{camera_up[1]}_{camera_up[2]}"
+    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}-camera_up_{camera_up[0]}_{camera_up[1]}_{camera_up[2]}-azimuth_{camera_azimuth}-elevation_{camera_elevation}"
 
     plotter.enable_parallel_projection()
     plotter.show_axes_all()
