@@ -838,12 +838,12 @@ def compute_FB_tile_areas(tile_count: int) -> Tuple[Dict[int, float], Dict[int, 
     if tile_count <= 0:
         raise ValidationError("Number of points must be positive!")
 
-    smallest_search_factor = 1.7
+    furthest_search_factor = 1.7
 
     if (tile_count > 2000):
-        smallest_search_factor = 1.6
+        furthest_search_factor = 1.6
 
-    tile_boundaries_dict = get_FB_tile_boundaries(tile_count, smallest_search_factor)
+    tile_boundaries_dict = get_FB_tile_boundaries(tile_count, furthest_search_factor)
 
     fraction_of_sphere_dict = {}
     tile_area_dict = {}
