@@ -65,7 +65,7 @@ def generate_fibonacci_lattice(num_points: int) -> List[Vector]:
     
     return vectors
 
-def get_FB_tile_boundaries(tile_count: int) -> Dict[int, List[List[Vector]]]:
+def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7) -> Dict[int, List[List[Vector]]]:
     """Generates the tiles (their boundaries) for Fibonacci-lattice Voronoi tiling.
     
     Args:
@@ -122,7 +122,7 @@ def get_FB_tile_boundaries(tile_count: int) -> Dict[int, List[List[Vector]]]:
         # For each neighbor, compute the candidate tile boundaries.
         for index_j in range(len(neighbors)):
             neighbor_j = neighbors[index_j]
-            if (neighbor_j[1] >= smallest_distance * 1.7):
+            if (neighbor_j[1] >= smallest_distance * furthest_search_factor):
                 break
 
             tile_index_j = neighbor_j[0]
@@ -838,7 +838,12 @@ def compute_FB_tile_areas(tile_count: int) -> Tuple[Dict[int, float], Dict[int, 
     if tile_count <= 0:
         raise ValidationError("Number of points must be positive!")
 
-    tile_boundaries_dict = get_FB_tile_boundaries(tile_count)
+    smallest_search_factor = 1.7
+
+    if (tile_count > 2000):
+        smallest_search_factor = 1.6
+
+    tile_boundaries_dict = get_FB_tile_boundaries(tile_count, smallest_search_factor)
 
     fraction_of_sphere_dict = {}
     tile_area_dict = {}
