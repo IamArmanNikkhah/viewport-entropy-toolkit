@@ -722,7 +722,7 @@ def get_tile_corners(tile_boundaries: List[List[Vector]]) -> List[Vector]:
 
     decimals_to_round = 4
 
-    tile_corners = [tile_boundaries[0][0].round(decimals=decimals_to_round), tile_boundaries[0][1].round(decimals=decimals_to_round)]
+    tile_corners = [tile_boundaries[0][0].round(decimals=decimals_to_round, round_down=True), tile_boundaries[0][1].round(decimals=decimals_to_round, round_down=True)]
     tile_corners_dict = {}
     tile_corners_dict[tile_corners[0]] = True
     tile_corners_dict[tile_corners[1]] = True
