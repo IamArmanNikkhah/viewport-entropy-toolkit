@@ -707,10 +707,14 @@ def get_tile_corners(tile_boundaries: List[List[Vector]]) -> List[Vector]:
     
     next_edge = tile_corners[1]
 
-    while (tile_corners_dict[edge_dict[next_edge][0]] == False or tile_corners_dict[edge_dict[next_edge][1]] == False):
-        next_edge = edge_dict[next_edge][0] if tile_corners_dict[edge_dict[next_edge][0]] == False else edge_dict[next_edge][1]
-        tile_corners.append(next_edge)
-        tile_corners_dict[next_edge] = True
+    try:
+        while (tile_corners_dict[edge_dict[next_edge][0]] == False or tile_corners_dict[edge_dict[next_edge][1]] == False):
+            next_edge = edge_dict[next_edge][0] if tile_corners_dict[edge_dict[next_edge][0]] == False else edge_dict[next_edge][1]
+            tile_corners.append(next_edge)
+            tile_corners_dict[next_edge] = True
+    except Exception as e:
+        print(f"Exception made on next edge: {next_edge}, tile: {tile_boundaries}")
+        print(e)
 
     return tile_corners
 
