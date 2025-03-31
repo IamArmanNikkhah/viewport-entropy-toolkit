@@ -201,7 +201,7 @@ def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7)
                 tile_boundary = [shortest_intersection[0], second_shortest_intersection[0]]
                 tile_boundaries[index_i].append(tile_boundary)
 
-        # For each tile boundary in this list, round them to 5 decimal places and make sure that any that are super close together are merged into one.
+        # For each tile boundary in this list, make sure that any that are super close together are merged into one.
         boundary_i_index = 0
         while boundary_i_index < len(tile_boundaries[index_i]):
             boundary_i = tile_boundaries[index_i][boundary_i_index]
@@ -216,23 +216,23 @@ def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7)
 
                 # If they aren't equal but are very closer together, then set both to the first one.
                 seg = get_line_segment(corner_i_0, corner_j_0)
-                seg_length = np.linalg.norm(seg).round(4)
-                if (corner_i_0 != corner_j_0) and (seg_length < 0.005):
+                seg_length = np.linalg.norm(seg)
+                if (corner_i_0 != corner_j_0) and (seg_length < 0.0005):
                     tile_boundaries[index_i][boundary_j_index][0] = corner_i_0
 
                 seg = get_line_segment(corner_i_0, corner_j_1)
-                seg_length = np.linalg.norm(seg).round(4)
-                if (corner_i_0 != corner_j_1) and (seg_length < 0.005):
+                seg_length = np.linalg.norm(seg)
+                if (corner_i_0 != corner_j_1) and (seg_length < 0.0005):
                     tile_boundaries[index_i][boundary_j_index][1] = corner_i_0
 
                 seg = get_line_segment(corner_i_1, corner_j_0)
-                seg_length = np.linalg.norm(seg).round(4)
-                if (corner_i_1 != corner_j_0) and (seg_length < 0.005):
+                seg_length = np.linalg.norm(seg)
+                if (corner_i_1 != corner_j_0) and (seg_length < 0.0005):
                     tile_boundaries[index_i][boundary_j_index][0] = corner_i_1
                 
                 seg = get_line_segment(corner_i_1, corner_j_1)
-                seg_length = np.linalg.norm(seg).round(4)
-                if (corner_i_1 != corner_j_1) and (seg_length < 0.005):
+                seg_length = np.linalg.norm(seg)
+                if (corner_i_1 != corner_j_1) and (seg_length < 0.0005):
                     tile_boundaries[index_i][boundary_j_index][1] = corner_i_1
 
                 boundary_j_index += 1
@@ -722,7 +722,7 @@ def get_tile_corners(tile_boundaries: List[List[Vector]]) -> List[Vector]:
 
     decimals_to_round = 4
 
-    tile_corners = [tile_boundaries[0][0].round(decimals=decimals_to_round, round_down=True), tile_boundaries[0][1].round(decimals=decimals_to_round, round_down=True)]
+    tile_corners = [tile_boundaries[0][0].round(decimals=decimals_to_round), tile_boundaries[0][1].round(decimals=decimals_to_round)]
     tile_corners_dict = {}
     tile_corners_dict[tile_corners[0]] = True
     tile_corners_dict[tile_corners[1]] = True
@@ -730,8 +730,8 @@ def get_tile_corners(tile_boundaries: List[List[Vector]]) -> List[Vector]:
     edge_dict = {}
 
     for P1, P2 in tile_boundaries:
-        P1_rounded = P1.round(decimals=decimals_to_round, round_down=True)
-        P2_rounded = P2.round(decimals=decimals_to_round, round_down=True)
+        P1_rounded = P1.round(decimals=decimals_to_round)
+        P2_rounded = P2.round(decimals=decimals_to_round)
 
         if P1_rounded not in edge_dict:
             edge_dict[P1_rounded] = [P2_rounded]
