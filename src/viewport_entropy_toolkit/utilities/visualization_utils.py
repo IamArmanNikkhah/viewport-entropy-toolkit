@@ -721,6 +721,7 @@ def save_tiling_visualization_with_weights(
         tile_boundaries: Dict[int, List[List[Tuple[float, float, float]]]],
         tile_weights: Dict[int, float],
         output_dir: Path,
+        steps=500,
         output_prefix: str="",
         camera_position: Tuple[float, float, float]=(0, 0, 5),
         camera_up: Tuple[float, float, float]= (0, 1, 0),
@@ -741,7 +742,7 @@ def save_tiling_visualization_with_weights(
     max_weight = max(tile_weights.values())
 
     for tile_index, boundaries in tile_boundaries.items():
-        patch = create_spherical_tile_patch(boundaries, sphere_radius=1.0)
+        patch = create_spherical_tile_patch(boundaries, sphere_radius=1.0, steps=steps)
         weight = tile_weights[tile_index]
         color = weight_to_color(weight, min_weight, max_weight)
         plotter.add_mesh(patch, color=color, opacity=1.0, lighting=False)
