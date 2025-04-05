@@ -684,3 +684,86 @@ def save_tiling_visualization_video(
         print(f"Error saving PNG: {e}")
 
     plotter.close()
+
+
+def weight_to_color(weight: float, min_weight: float, max_weight: float) -> Tuple[float, float, float]:
+    """Maps a weight to a color."""
+    normalized_weight = (weight - min_weight) / (max_weight - min_weight)
+    colormap = plt.cm.inferno
+    color = colormap(normalized_weight)
+    return (color[0], color[1], color[2])
+
+def create_spherical_tile_patch(boundary: List[List[Tuple[float, float, float]]], sphere_radius=1.0, steps=500):
+    arc_points = []
+    for start, end in boundary:
+        arc = [spherical_interpolation(start, end, t) for t in np.linspace(0, 1, steps)]
+        arc_points.extend(arc[:-1])
+
+    arc_points = np.array([sphere_radius * np.array(v) / np.linalg.norm(v) for v in arc_points])
+
+    center = np.mean(arc_points, axis=0)
+    center /= np.linalg.norm(center)
+    center *= sphere_radius
+
+    points = [center] + arc_points.tolist()
+    faces = []
+
+    for i in range(1, len(arc_points)):
+        faces.append([3, 0, i, i + 1])
+    faces.append([3, 0, len(arc_points), 1])
+
+    faces = np.hstack(faces)
+    patch = pv.PolyData(np.array(points), faces)
+    patch = patch.smooth(n_iter=10, relaxation_factor=0.1)
+    return patch
+
+def save_tiling_visualization_with_weights(
+        tile_boundaries: Dict[int, List[List[Tuple[float, float, float]]]],
+        tile_weights: Dict[int, float],
+        output_dir: Path,
+        output_prefix: str="",
+        camera_position: Tuple[float, float, float]=(0, 0, 5),
+        camera_up: Tuple[float, float, float]= (0, 1, 0),
+        camera_focal_point: Tuple[float, float, float] = (0,0,0),
+        camera_azimuth: int = 0,
+        camera_elevation: int = 0
+        ):
+    pv.start_xvfb()
+    plotter = pv.Plotter(off_screen=True)
+
+    sphere_radius = 1
+    sphere_opacity = 0.3
+    sphere = pv.Sphere(radius=sphere_radius)
+    sphere.opacity = sphere_opacity
+    sphere.color = 'grey'
+
+    min_weight = min(tile_weights.values())
+    max_weight = max(tile_weights.values())
+
+    for tile_index, boundaries in tile_boundaries.items():
+        patch = create_spherical_tile_patch(boundaries, sphere_radius=1.0)
+        weight = tile_weights[tile_index]
+        color = weight_to_color(weight, min_weight, max_weight)
+        plotter.add_mesh(patch, color=color, opacity=1.0, lighting=False)
+
+    plotter.camera.position = camera_position
+    plotter.camera.up = camera_up
+    plotter.camera.focal_point = camera_focal_point
+    plotter.camera.azimuth = camera_azimuth
+    plotter.camera.elevation = camera_elevation
+
+    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}-camera_up_{camera_up[0]}_{camera_up[1]}_{camera_up[2]}-azimuth_{camera_azimuth}-elevation_{camera_elevation}"
+
+    plotter.enable_parallel_projection()
+    plotter.show_axes_all()
+    plotter.remove_bounds_axes()
+
+    png_file_name = os.path.join(str(output_dir), f'{output_prefix}tiling_visualization_with_weights{file_name_suffix}.png')
+
+    try:
+        plotter.screenshot(png_file_name)
+        print(f"PNG saved: {png_file_name}")
+    except Exception as e:
+        print(f"Error saving PNG: {e}")
+
+    plotter.close()
