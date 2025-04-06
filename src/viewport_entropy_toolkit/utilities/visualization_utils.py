@@ -397,12 +397,9 @@ def save_fb_tiling_visualization_image(
 
     plotter.close()
 
-def save_fb_tiling_visualization_image(
+def save_fb_tiling_visualization_glb(
         tile_count: int,
-        output_dir: Path,
-        camera_position: Tuple[float, float, float]=(0, 0, 5),
-        camera_up: Tuple[float, float, float]= (0, 1, 0),
-        camera_focal_point: Tuple[float, float, float] = (0,0,0)
+        output_dir: Path
         ):
     """Saves a video of the tiling on a sphere for fibonacci lattice.
     
@@ -465,18 +462,11 @@ def save_fb_tiling_visualization_image(
     plotter.add_mesh(lines, color='black', line_width=2)
     plotter.add_mesh(points, color='red', point_size=10) #plot tile centers
 
-    # Set camera view
-    plotter.camera.position = camera_position
-    plotter.camera.up = camera_up
-    plotter.camera.focal_point = camera_focal_point
-
-    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}-camera_up_{camera_up[0]}_{camera_up[1]}_{camera_up[2]}"
-
     plotter.enable_parallel_projection()
     plotter.show_axes_all()
     plotter.remove_bounds_axes()
 
-    gltf_file_name = os.path.join(str(output_dir), f'fibonacci_lattice-{tile_count}_tiles{file_name_suffix}.glb')
+    gltf_file_name = os.path.join(str(output_dir), f'fibonacci_lattice-{tile_count}_tiles.glb')
 
     try:
         plotter.export_gltf(gltf_file_name)  # This will export in GLTF format by default
@@ -595,12 +585,7 @@ def save_fb_tiling_visualization_video(tile_count: int, output_dir: Path, horizo
 def save_tiling_visualization_glb(
         tile_boundaries: Dict[int, List[List[Vector]]],
         output_dir: Path,
-        output_prefix: str="",
-        camera_position: Tuple[float, float, float]=(0, 0, 5),
-        camera_up: Tuple[float, float, float]= (0, 1, 0),
-        camera_focal_point: Tuple[float, float, float] = (0,0,0),
-        camera_azimuth: int = 0,
-        camera_elevation: int = 0
+        output_prefix: str=""
         ):
     """Saves a video of the tiling on a sphere for fibonacci lattice.
     
@@ -649,20 +634,11 @@ def save_tiling_visualization_glb(
     plotter.add_mesh(sphere)
     plotter.add_mesh(lines, color='black', line_width=2)
 
-    # Set camera view
-    plotter.camera.position = camera_position
-    plotter.camera.up = camera_up
-    plotter.camera.focal_point = camera_focal_point
-    plotter.camera.azimuth = camera_azimuth
-    plotter.camera.elevation = camera_elevation
-
-    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}-camera_up_{camera_up[0]}_{camera_up[1]}_{camera_up[2]}-azimuth_{camera_azimuth}-elevation_{camera_elevation}"
-
     plotter.enable_parallel_projection()
     plotter.show_axes_all()
     plotter.remove_bounds_axes()
 
-    gltf_file_name = os.path.join(str(output_dir), f'{output_prefix}tiling_visualization{file_name_suffix}.glb')
+    gltf_file_name = os.path.join(str(output_dir), f'{output_prefix}tiling_visualization.glb')
 
     try:
         plotter.export_gltf(gltf_file_name)  # This will export in GLTF format by default
@@ -889,12 +865,7 @@ def save_tiling_visualization_with_weights(
         tile_weights: Dict[int, float],
         output_dir: Path,
         steps=500,
-        output_prefix: str="",
-        camera_position: Tuple[float, float, float]=(0, 0, 5),
-        camera_up: Tuple[float, float, float]= (0, 1, 0),
-        camera_focal_point: Tuple[float, float, float] = (0,0,0),
-        camera_azimuth: int = 0,
-        camera_elevation: int = 0
+        output_prefix: str=""
         ):
     pv.start_xvfb()
     plotter = pv.Plotter(off_screen=True)
@@ -914,19 +885,11 @@ def save_tiling_visualization_with_weights(
         color = weight_to_color(weight, min_weight, max_weight)
         plotter.add_mesh(patch, color=color, opacity=1.0, lighting=False)
 
-    plotter.camera.position = camera_position
-    plotter.camera.up = camera_up
-    plotter.camera.focal_point = camera_focal_point
-    plotter.camera.azimuth = camera_azimuth
-    plotter.camera.elevation = camera_elevation
-
-    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}-camera_up_{camera_up[0]}_{camera_up[1]}_{camera_up[2]}-azimuth_{camera_azimuth}-elevation_{camera_elevation}"
-
     plotter.enable_parallel_projection()
     plotter.show_axes_all()
     plotter.remove_bounds_axes()
 
-    gltf_file_name = os.path.join(str(output_dir), f'{output_prefix}tiling_visualization_with_weights{file_name_suffix}.glb')
+    gltf_file_name = os.path.join(str(output_dir), f'{output_prefix}tiling_visualization_with_weights.glb')
 
     try:
         plotter.export_gltf(gltf_file_name)  # This will export in GLTF format by default
