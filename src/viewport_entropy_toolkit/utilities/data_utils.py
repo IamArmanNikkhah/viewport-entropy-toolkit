@@ -9,6 +9,8 @@ Functions:
     get_FB_tile_boundaries: Generates the tiles (their boundaries) for Fibonacci-lattice Voronoi tiling.
     get_ERP_tile_boundaries: Generates the tiles (their boundaries) for ERP tiling.
     get_CMP_tile_boundaries: Generates the tiles (their boundaries) for CMP tiling.
+    vector_angle_distance: Finds the angular distance between two Vectors.
+    find_angular_distances: Finds the angular distance between a single Vector and a list of other Vectors.
     normalize_to_pixel: Converts normalized coordinates to pixel coordinates.
     pixel_to_spherical: Converts pixel coordinates to spherical coordinates.
     process_viewport_data: Processes viewport center trajectory data.
@@ -406,6 +408,55 @@ def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
 
 
     return CMP_tile_boundaries
+
+def vector_angle_distance(v1: Vector, v2: Vector) -> float:
+    """Computes the angle between two vectors in radians.
+    
+    Args:
+        v1: First vector.
+        v2: Second vector.
+    
+    Returns:
+        float: Angle between vectors in radians.
+    
+    Raises:
+        ValidationError: If vectors are invalid.
+    """
+    try:
+        v1_np = np.array([v1.x, v1.y, v1.z])
+        v2_np = np.array([v2.x, v2.y, v2.z])
+        
+        v1_normalized = v1_np / np.linalg.norm(v1_np)
+        v2_normalized = v2_np / np.linalg.norm(v2_np)
+        
+        dot_product = np.dot(v1_normalized, v2_normalized)
+        dot_product = np.clip(dot_product, -1.0, 1.0)
+        
+        return np.arccos(dot_product)
+        
+    except Exception as e:
+        raise ValidationError(f"Error calculating vector angle: {str(e)}")
+
+
+def find_angular_distances(
+    vector: Vector,
+    vectors: List[Vector]
+) -> np.ndarray:
+    """Finds angular distances between a single Vector and a list of Vectors.
+    
+    Args:
+        vector: Reference vector.
+        vectors: List of Vectors.
+    
+    Returns:
+        np.ndarray: Array of [tile_index, angular_distance] pairs.
+    """
+    distances = np.array([
+        [int(i), vector_angle_distance(vector, center)]
+        for i, center in enumerate(vectors)
+    ])
+    return distances
+
 
 def validate_video_dimensions(width: int, height: int) -> None:
     """Validates video dimensions.

@@ -397,6 +397,95 @@ def save_fb_tiling_visualization_image(
 
     plotter.close()
 
+def save_fb_tiling_visualization_image(
+        tile_count: int,
+        output_dir: Path,
+        camera_position: Tuple[float, float, float]=(0, 0, 5),
+        camera_up: Tuple[float, float, float]= (0, 1, 0),
+        camera_focal_point: Tuple[float, float, float] = (0,0,0)
+        ):
+    """Saves a video of the tiling on a sphere for fibonacci lattice.
+    
+    Args:
+        entropy_value: The list of entropy values.
+        output_path: Path for output video file.
+        config: Optional visualization configuration.
+    """
+
+     # Grab tile center points and tile boundaries.
+    tile_centers_vectors = generate_fibonacci_lattice(tile_count)
+    tile_boundaries = get_FB_tile_boundaries(tile_count)
+
+    # Convert spherical coordinates to Cartesian coordinates for plotting
+    x = [vec.x for vec in tile_centers_vectors]
+    y = [vec.y for vec in tile_centers_vectors]
+    z = [vec.z for vec in tile_centers_vectors]
+
+    # Extract lines for tile boundary
+    tile_boundary_list = []
+    for boundaries in tile_boundaries.values():
+        for boundary in boundaries:
+            tile_boundary_list.append(boundary)
+
+    pv.start_xvfb()  # Start the virtual framebuffer
+
+    sphere_radius = 1 # Change the radius here
+    sphere_opacity = 0.3  # Change the opacity here
+    sphere = pv.Sphere(radius=sphere_radius)
+    sphere.opacity = sphere_opacity
+    sphere.color = 'grey'
+
+    # Generate points for each arc in the boundaries
+    num_points = 50  # Number of points on the arc
+    t_values = np.linspace(0, 1, num_points)
+
+    arc_points_list = []
+    line_segments = [] #redefine line_segments.
+    line_segment_count = 0 #keep track of segment number.
+
+    for boundary in tile_boundary_list:
+        vec_start, vec_end = boundary
+        arc_points = np.array([spherical_interpolation(vec_start, vec_end, t) for t in t_values])
+        for i in range(len(arc_points) - 1):
+            arc_points_list.extend(arc_points[i:i+2]) #add the two points of the segment.
+            line_segments.append([2, line_segment_count*2, line_segment_count*2+1]) #create a line segment.
+            line_segment_count +=1
+
+    # Create PolyData for lines
+    lines = pv.PolyData(np.array(arc_points_list)) #create the points.
+    lines.lines = np.array(line_segments).flatten() #define the lines.
+
+    # Create PolyData for tile centers
+    points = pv.PolyData(np.column_stack((x, y, z)))
+    points['colors'] = np.array([[255, 0, 0]] * len(x))  # Red points
+
+    # Create plotter
+    plotter = pv.Plotter(off_screen=True)
+    plotter.add_mesh(sphere)
+    plotter.add_mesh(lines, color='black', line_width=2)
+    plotter.add_mesh(points, color='red', point_size=10) #plot tile centers
+
+    # Set camera view
+    plotter.camera.position = camera_position
+    plotter.camera.up = camera_up
+    plotter.camera.focal_point = camera_focal_point
+
+    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}-camera_up_{camera_up[0]}_{camera_up[1]}_{camera_up[2]}"
+
+    plotter.enable_parallel_projection()
+    plotter.show_axes_all()
+    plotter.remove_bounds_axes()
+
+    gltf_file_name = os.path.join(str(output_dir), f'fibonacci_lattice-{tile_count}_tiles{file_name_suffix}.glb')
+
+    try:
+        plotter.export_gltf(gltf_file_name)  # This will export in GLTF format by default
+        print(f"GLTF saved: {gltf_file_name}")
+    except Exception as e:
+        print(f"Error saving GLTF: {e}")
+
+    plotter.close()
+
 def save_fb_tiling_visualization_video(tile_count: int, output_dir: Path, horizontal_pan: bool=True, vertical_pan: bool=True):
     """Saves a video of the tiling on a sphere for fibonacci lattice.
     
@@ -502,6 +591,84 @@ def save_fb_tiling_visualization_video(tile_count: int, output_dir: Path, horizo
         print(f"Error saving PNG: {e}")
 
     plotter.close()
+
+def save_tiling_visualization_glb(
+        tile_boundaries: Dict[int, List[List[Vector]]],
+        output_dir: Path,
+        output_prefix: str="",
+        camera_position: Tuple[float, float, float]=(0, 0, 5),
+        camera_up: Tuple[float, float, float]= (0, 1, 0),
+        camera_focal_point: Tuple[float, float, float] = (0,0,0),
+        camera_azimuth: int = 0,
+        camera_elevation: int = 0
+        ):
+    """Saves a video of the tiling on a sphere for fibonacci lattice.
+    
+    Args:
+        entropy_value: The list of entropy values.
+        output_path: Path for output video file.
+        config: Optional visualization configuration.
+    """
+
+    # Extract lines for tile boundary
+    tile_boundary_list = []
+    for boundaries in tile_boundaries.values():
+        for boundary in boundaries:
+            tile_boundary_list.append(boundary)
+
+    pv.start_xvfb()  # Start the virtual framebuffer
+
+    sphere_radius = 1 # Change the radius here
+    sphere_opacity = 0.3  # Change the opacity here
+    sphere = pv.Sphere(radius=sphere_radius)
+    sphere.opacity = sphere_opacity
+    sphere.color = 'grey'
+
+    # Generate points for each arc in the boundaries
+    num_points = 50  # Number of points on the arc
+    t_values = np.linspace(0, 1, num_points)
+
+    arc_points_list = []
+    line_segments = [] #redefine line_segments.
+    line_segment_count = 0 #keep track of segment number.
+
+    for boundary in tile_boundary_list:
+        vec_start, vec_end = boundary
+        arc_points = np.array([spherical_interpolation(vec_start, vec_end, t) for t in t_values])
+        for i in range(len(arc_points) - 1):
+            arc_points_list.extend(arc_points[i:i+2]) #add the two points of the segment.
+            line_segments.append([2, line_segment_count*2, line_segment_count*2+1]) #create a line segment.
+            line_segment_count +=1
+
+    # Create PolyData for lines
+    lines = pv.PolyData(np.array(arc_points_list)) #create the points.
+    lines.lines = np.array(line_segments).flatten() #define the lines.
+
+    # Create plotter
+    plotter = pv.Plotter(off_screen=True)
+    plotter.add_mesh(sphere)
+    plotter.add_mesh(lines, color='black', line_width=2)
+
+    # Set camera view
+    plotter.camera.position = camera_position
+    plotter.camera.up = camera_up
+    plotter.camera.focal_point = camera_focal_point
+    plotter.camera.azimuth = camera_azimuth
+    plotter.camera.elevation = camera_elevation
+
+    file_name_suffix = f"-camera_position_{camera_position[0]}_{camera_position[1]}_{camera_position[2]}-camera_up_{camera_up[0]}_{camera_up[1]}_{camera_up[2]}-azimuth_{camera_azimuth}-elevation_{camera_elevation}"
+
+    plotter.enable_parallel_projection()
+    plotter.show_axes_all()
+    plotter.remove_bounds_axes()
+
+    gltf_file_name = os.path.join(str(output_dir), f'{output_prefix}tiling_visualization{file_name_suffix}.glb')
+
+    try:
+        plotter.export_gltf(gltf_file_name)  # This will export in GLTF format by default
+        print(f"GLTF saved: {gltf_file_name}")
+    except Exception as e:
+        print(f"Error saving GLTF: {e}")
 
 def save_tiling_visualization_image(
         tile_boundaries: Dict[int, List[List[Vector]]],
@@ -759,12 +926,12 @@ def save_tiling_visualization_with_weights(
     plotter.show_axes_all()
     plotter.remove_bounds_axes()
 
-    png_file_name = os.path.join(str(output_dir), f'{output_prefix}tiling_visualization_with_weights{file_name_suffix}.png')
+    gltf_file_name = os.path.join(str(output_dir), f'{output_prefix}tiling_visualization_with_weights{file_name_suffix}.glb')
 
     try:
-        plotter.screenshot(png_file_name)
-        print(f"PNG saved: {png_file_name}")
+        plotter.export_gltf(gltf_file_name)  # This will export in GLTF format by default
+        print(f"GLTF saved: {gltf_file_name}")
     except Exception as e:
-        print(f"Error saving PNG: {e}")
+        print(f"Error saving GLTF: {e}")
 
     plotter.close()

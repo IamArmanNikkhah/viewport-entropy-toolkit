@@ -15,7 +15,7 @@ import numpy as np
 from dataclasses import dataclass
 
 from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError
-
+from viewport_entropy_toolkit.utilities.data_utils import find_angular_distances
 
 @dataclass
 class EntropyConfig:
@@ -37,54 +37,6 @@ class EntropyConfig:
         if self.power_factor <= 0:
             raise ValidationError("Power factor must be positive")
 
-
-def vector_angle_distance(v1: Vector, v2: Vector) -> float:
-    """Computes the angle between two vectors in radians.
-    
-    Args:
-        v1: First vector.
-        v2: Second vector.
-    
-    Returns:
-        float: Angle between vectors in radians.
-    
-    Raises:
-        ValidationError: If vectors are invalid.
-    """
-    try:
-        v1_np = np.array([v1.x, v1.y, v1.z])
-        v2_np = np.array([v2.x, v2.y, v2.z])
-        
-        v1_normalized = v1_np / np.linalg.norm(v1_np)
-        v2_normalized = v2_np / np.linalg.norm(v2_np)
-        
-        dot_product = np.dot(v1_normalized, v2_normalized)
-        dot_product = np.clip(dot_product, -1.0, 1.0)
-        
-        return np.arccos(dot_product)
-        
-    except Exception as e:
-        raise ValidationError(f"Error calculating vector angle: {str(e)}")
-
-
-def find_angular_distances(
-    vector: Vector,
-    tile_centers: List[Vector]
-) -> np.ndarray:
-    """Finds angular distances between a vector and tile centers.
-    
-    Args:
-        vector: Reference vector.
-        tile_centers: List of tile center vectors.
-    
-    Returns:
-        np.ndarray: Array of [tile_index, angular_distance] pairs.
-    """
-    distances = np.array([
-        [i, vector_angle_distance(vector, center)]
-        for i, center in enumerate(tile_centers)
-    ])
-    return distances
 
 def find_nearest_tile(
         vector: Vector,
@@ -110,7 +62,7 @@ def calculate_tile_weights(
     tile_centers: List[Vector],
     config: EntropyConfig
 ) -> Dict[Vector, float]:
-    """Calculates weight distribution across tiles for a vector using fibonacci lattice tiling.
+    """Calculates weight distribution across tiles for a vector using a set of tile centers.
     
     Args:
         vector: Input vector.
@@ -142,7 +94,6 @@ def calculate_tile_weights(
         weights[tile_centers[nearest_idx]] = 1.0
     
     return weights
-
 
 def compute_spatial_entropy(
     vector_dict: Dict[str, Vector],

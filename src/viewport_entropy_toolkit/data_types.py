@@ -189,6 +189,21 @@ class Vector:
             y=rounded_y,
             z=rounded_z
         )
+    
+    def to_spherical(self) -> RadialPoint:
+        _lon = float(round(np.degrees(np.arctan2(self.y, self.x)), 6))
+        _lat = float(round(np.degrees(np.arcsin(self.z / np.sqrt(self.x**2 + self.y**2 + self.z**2))), 6))
+
+        # Ensure longitude is in [-180, 180]
+        if _lon > 180:
+            _lon -= 360
+        elif _lon <= -180:
+            _lon += 360
+
+        return RadialPoint(
+                lon=_lon,
+                lat=_lat
+            )
 
     @classmethod
     def from_spherical(cls, lon: float, lat: float) -> 'Vector':
