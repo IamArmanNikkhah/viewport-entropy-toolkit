@@ -9,30 +9,41 @@ from .data_utils import (
     get_FB_tile_boundaries,
     get_ERP_tile_boundaries,
     get_CMP_tile_boundaries,
+    vector_angle_distance,
+    find_angular_distances,
+    find_angular_distances_from_dict,
+    ERP_distance,
+    find_ERP_distances_from_dict,
+
+
     normalize_to_pixel,
     pixel_to_spherical,
     process_viewport_data,
     format_trajectory_data,
     validate_video_dimensions,
+
+
     normalize,
     find_perpendicular_on_tangent_plane,
     great_circle_intersection,
     get_line_segment,
     find_nearest_point,
     spherical_interpolation,
+
+
     get_tile_corners,
     triangulate_spherical_polygon,
     angle_at_vertex,
     calculate_spherical_triangle_area,
     compute_spherical_polygon_area,
+
+
     compute_FB_tile_areas,
     compute_ERP_tile_areas,
     compute_CMP_tile_areas,
 )
 
 from .entropy_utils import (
-    vector_angle_distance,
-    find_angular_distances,
     find_nearest_tile,
     calculate_tile_weights,
     compute_spatial_entropy,
@@ -61,6 +72,9 @@ __all__ = [
     'get_FB_tile_boundaries',
     'get_ERP_tile_boundaries',
     'get_CMP_tile_boundaries',
+    'find_angular_distances_from_dict',
+    'ERP_distance',
+    'find_ERP_distances_from_dict',
     'normalize_to_pixel',
     'pixel_to_spherical',
     'process_viewport_data',
@@ -82,8 +96,6 @@ __all__ = [
     'compute_CMP_tile_areas',
     
     # Entropy utilities
-    'vector_angle_distance',
-    'find_angular_distances',
     'find_nearest_tile',
     'calculate_tile_weights',
     'compute_spatial_entropy',

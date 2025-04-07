@@ -9,13 +9,20 @@ Functions:
     get_FB_tile_boundaries: Generates the tiles (their boundaries) for Fibonacci-lattice Voronoi tiling.
     get_ERP_tile_boundaries: Generates the tiles (their boundaries) for ERP tiling.
     get_CMP_tile_boundaries: Generates the tiles (their boundaries) for CMP tiling.
+    get_CMP_tile_centers: Generates the tile centers for CMP tiling.
+
     vector_angle_distance: Finds the angular distance between two Vectors.
     find_angular_distances: Finds the angular distance between a single Vector and a list of other Vectors.
+    find_angular_distances_from_dict: Finds the angular distances between a single Vector and a dictionary of other Vectors.
+    ERP_distance: Finds the Euclidean distance on an ERP between two Vectors.
+    find_ERP_distances_from_dict: Finds the ERP distances between a single Vector and a dictionary of other Vectors.
+
     normalize_to_pixel: Converts normalized coordinates to pixel coordinates.
     pixel_to_spherical: Converts pixel coordinates to spherical coordinates.
     process_viewport_data: Processes viewport center trajectory data.
     validate_video_dimensions: Validates video dimensions.
     format_trajectory_data: Formats trajectory data for analysis.
+
     compute_FB_tile_areas: Computes the area for each FB tile.
     compute_ERP_tile_areas: Computes the area for each ERP tile.
     compute_CMP_tile_areas: Computes the area for each CMP tile.
@@ -586,6 +593,77 @@ def find_angular_distances(
         [int(i), vector_angle_distance(vector, center)]
         for i, center in enumerate(vectors)
     ])
+    return distances
+
+def find_angular_distances_from_dict(
+    vector: Vector,
+    tile_centers: Dict[str, Vector]
+) -> np.ndarray:
+    """
+    Finds angular distances between a vector and tile centers from a dictionary.
+
+    Args:
+        vector: Reference vector.
+        tile_centers: Dictionary where keys are tile IDs and values are Vector centers.
+
+    Returns:
+        np.ndarray: Array of [tile_key, angular_distance] pairs as a structured array.
+    """
+    distances = np.array([
+        (key, vector_angle_distance(vector, center))
+        for key, center in tile_centers.items()
+    ], dtype=[("tile_key", "U50"), ("angular_distance", "f8")])
+    
+    return distances
+
+def ERP_distance(v1: Vector, v2: Vector) -> float:
+    """Computes the distance in latitude and longitude (ERP), in radians, between two vectors.
+    
+    Args:
+        v1: First vector.
+        v2: Second vector.
+    
+    Returns:
+        float: Distance in ERP between vectors.
+    
+    Raises:
+        ValidationError: If vectors are invalid.
+    """
+    try:
+        radial1 = v1.to_spherical()
+        radial2 = v2.to_spherical()
+
+        lat_dist = np.radians(radial1.lat) - np.radians(radial2.lat)
+        lon_dist = np.radians(radial1.lon) - np.radians(radial2.lon)
+        
+        ERP_dist = np.sqrt(lat_dist ** 2 + lon_dist ** 2)
+
+        print(ERP_dist)
+
+        return ERP_dist
+        
+    except Exception as e:
+        raise ValidationError(f"Error calculating ERP distance: {str(e)}")
+
+def find_ERP_distances_from_dict(
+  vector: Vector,
+    tile_centers: Dict[str, Vector]
+    ) -> np.ndarray:
+    """
+    Finds ERP distances between a vector and tile centers from a dictionary.
+
+    Args:
+        vector: Reference vector.
+        tile_centers: Dictionary where keys are tile IDs and values are Vector centers.
+
+    Returns:
+        np.ndarray: Array of [tile_key, ERP_distance] pairs as a structured array.
+    """
+    distances = np.array([
+        (key, ERP_distance(vector, center))
+        for key, center in tile_centers.items()
+    ], dtype=[("tile_key", "U50"), ("angular_distance", "f8")])
+
     return distances
 
 

@@ -15,7 +15,7 @@ import numpy as np
 from dataclasses import dataclass
 
 from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError
-
+from viewport_entropy_toolkit.utilities.data_utils import find_angular_distances, find_angular_distances_from_dict, find_ERP_distances_from_dict
 
 @dataclass
 class EntropyConfig:
@@ -37,126 +37,6 @@ class EntropyConfig:
             raise ValidationError("FOV angle must be between 0 and 360 degrees")
         if self.power_factor <= 0:
             raise ValidationError("Power factor must be positive")
-
-
-def vector_angle_distance(v1: Vector, v2: Vector) -> float:
-    """Computes the angle between two vectors in radians.
-    
-    Args:
-        v1: First vector.
-        v2: Second vector.
-    
-    Returns:
-        float: Angle between vectors in radians.
-    
-    Raises:
-        ValidationError: If vectors are invalid.
-    """
-    try:
-        v1_np = np.array([v1.x, v1.y, v1.z])
-        v2_np = np.array([v2.x, v2.y, v2.z])
-        
-        v1_normalized = v1_np / np.linalg.norm(v1_np)
-        v2_normalized = v2_np / np.linalg.norm(v2_np)
-        
-        dot_product = np.dot(v1_normalized, v2_normalized)
-        dot_product = np.clip(dot_product, -1.0, 1.0)
-        
-        return np.arccos(dot_product)
-        
-    except Exception as e:
-        raise ValidationError(f"Error calculating vector angle: {str(e)}")
-
-
-def find_angular_distances(
-    vector: Vector,
-    tile_centers: List[Vector]
-) -> np.ndarray:
-    """Finds angular distances between a vector and tile centers.
-    
-    Args:
-        vector: Reference vector.
-        tile_centers: List of tile center vectors.
-    
-    Returns:
-        np.ndarray: Array of [tile_index, angular_distance] pairs.
-    """
-    distances = np.array([
-        [i, vector_angle_distance(vector, center)]
-        for i, center in enumerate(tile_centers)
-    ])
-    return distances
-
-def find_angular_distances_from_dict(
-    vector: Vector,
-    tile_centers: Dict[str, Vector]
-) -> np.ndarray:
-    """
-    Finds angular distances between a vector and tile centers from a dictionary.
-
-    Args:
-        vector: Reference vector.
-        tile_centers: Dictionary where keys are tile IDs and values are Vector centers.
-
-    Returns:
-        np.ndarray: Array of [tile_key, angular_distance] pairs as a structured array.
-    """
-    distances = np.array([
-        (key, vector_angle_distance(vector, center))
-        for key, center in tile_centers.items()
-    ], dtype=[("tile_key", "U50"), ("angular_distance", "f8")])
-    
-    return distances
-
-def ERP_distance(v1: Vector, v2: Vector) -> float:
-    """Computes the distance in latitude and longitude (ERP), in radians, between two vectors.
-    
-    Args:
-        v1: First vector.
-        v2: Second vector.
-    
-    Returns:
-        float: Distance in ERP between vectors.
-    
-    Raises:
-        ValidationError: If vectors are invalid.
-    """
-    try:
-        radial1 = v1.to_spherical()
-        radial2 = v2.to_spherical()
-
-        lat_dist = np.radians(radial1.lat) - np.radians(radial2.lat)
-        lon_dist = np.radians(radial1.lon) - np.radians(radial2.lon)
-        
-        ERP_dist = np.sqrt(lat_dist ** 2 + lon_dist ** 2)
-
-        print(ERP_dist)
-
-        return ERP_dist
-        
-    except Exception as e:
-        raise ValidationError(f"Error calculating ERP distance: {str(e)}")
-
-def find_ERP_distances_from_dict(
-  vector: Vector,
-    tile_centers: Dict[str, Vector]
-    ) -> np.ndarray:
-    """
-    Finds ERP distances between a vector and tile centers from a dictionary.
-
-    Args:
-        vector: Reference vector.
-        tile_centers: Dictionary where keys are tile IDs and values are Vector centers.
-
-    Returns:
-        np.ndarray: Array of [tile_key, ERP_distance] pairs as a structured array.
-    """
-    distances = np.array([
-        (key, ERP_distance(vector, center))
-        for key, center in tile_centers.items()
-    ], dtype=[("tile_key", "U50"), ("angular_distance", "f8")])
-
-    return distances
 
 
 
@@ -335,7 +215,6 @@ def compute_transition_entropy(
         current_vector_dict: dict,
         tile_centers: List[Vector],
         config: EntropyConfig,
-        FOV_angle: float
         ) -> Tuple[float, Dict[Vector, float], Dict[str, int]]:
     """
     Computes transition entropy for a set of vectors.
@@ -371,9 +250,6 @@ def compute_transition_entropy(
     total_weight = 0
     tile_assignments = {}
     transition_entropy = 0
-
-    # Maximum angular distance to consider for transition entropy calculation is half of FOV angle
-    max_angular_distance = float(FOV_angle) / 2.0
 
     # Find the proportion of FOVs and of transitions in each tile.
     for identifier, vector in current_vector_dict.items():
