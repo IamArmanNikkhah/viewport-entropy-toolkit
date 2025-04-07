@@ -638,8 +638,6 @@ def ERP_distance(v1: Vector, v2: Vector) -> float:
         
         ERP_dist = np.sqrt(lat_dist ** 2 + lon_dist ** 2)
 
-        print(ERP_dist)
-
         return ERP_dist
         
     except Exception as e:
