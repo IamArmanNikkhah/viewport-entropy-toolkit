@@ -240,11 +240,6 @@ def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7)
                 boundary_j_index += 1
 
             boundary_i_index += 1
-
-
-
-
-
     
     return tile_boundaries
 
@@ -311,7 +306,8 @@ def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
         radius: the radius of the circle.
 
     Returns:
-        Dict: A dictionary where each tile index "i_j" has a list of tile boundaries, where i is horizontal index and j is vertical index.
+        Dict: A dictionary where each tile index "face_FACE-i_j" has a list of tile boundaries, where FACE denotes which axis value is constant (e.g. Z=1)
+         and i is horizontal index and j is vertical index.
 
     Raises:
         ValidationError: Error if tile count is less than 1.
@@ -324,6 +320,109 @@ def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
 
 
 
+    horizontal_step = 2 * radius / num_tiles_horizontal
+    vertical_step = 2 * radius / num_tiles_vertical
+
+    # Do the XY plane with Z = 1
+    face_key = "Z=1"
+    for i in range(num_tiles_horizontal):
+        for j in range(num_tiles_vertical):
+            index_key = f"face_{face_key}-{i}_{j}"
+
+            p1 = Vector(-radius + i * horizontal_step, -radius + j * vertical_step, radius)
+            p2 = Vector(-radius + i * horizontal_step, -radius + (j + 1) * vertical_step, radius)
+            p3 = Vector(-radius + (i + 1) * horizontal_step, -radius + (j + 1) * vertical_step, radius)
+            p4 = Vector(-radius + (i + 1) * horizontal_step, -radius + j * vertical_step, radius)
+
+            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+
+    # Do the XY plane with Z = -1
+    face_key = "Z=-1"
+    for i in range(num_tiles_horizontal):
+        for j in range(num_tiles_vertical):
+            index_key = f"face_{face_key}-{i}_{j}"
+
+            p1 = Vector(-radius + i * horizontal_step, -radius + j * vertical_step, -radius)
+            p2 = Vector(-radius + i * horizontal_step, -radius + (j + 1) * vertical_step, -radius)
+            p3 = Vector(-radius + (i + 1) * horizontal_step, -radius + (j + 1) * vertical_step, -radius)
+            p4 = Vector(-radius + (i + 1) * horizontal_step, -radius + j * vertical_step, -radius)
+
+            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+    # Do the XZ plane with Y = 1
+    face_key = "Y=1"
+    for i in range(num_tiles_horizontal):
+        for j in range(num_tiles_vertical):
+            index_key = f"face_{face_key}-{i}_{j}"
+
+            p1 = Vector(-radius + i * horizontal_step, radius, -radius + j * vertical_step)
+            p2 = Vector(-radius + i * horizontal_step, radius, -radius + (j + 1) * vertical_step)
+            p3 = Vector(-radius + (i + 1) * horizontal_step, radius, -radius + (j + 1) * vertical_step)
+            p4 = Vector(-radius + (i + 1) * horizontal_step, radius, -radius + j * vertical_step)
+
+            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+    # Do the XZ plane with Y = -1
+    face_key = "Y=-1"
+    for i in range(num_tiles_horizontal):
+        for j in range(num_tiles_vertical):
+            index_key = f"face_{face_key}-{i}_{j}"
+
+            p1 = Vector(-radius + i * horizontal_step, -radius, -radius + j * vertical_step)
+            p2 = Vector(-radius + i * horizontal_step, -radius, -radius + (j + 1) * vertical_step)
+            p3 = Vector(-radius + (i + 1) * horizontal_step, -radius, -radius + (j + 1) * vertical_step)
+            p4 = Vector(-radius + (i + 1) * horizontal_step, -radius, -radius + j * vertical_step)
+
+            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+    # Do the YZ plane with X = 1
+    face_key = "X=1"
+    for i in range(num_tiles_horizontal):
+        for j in range(num_tiles_vertical):
+            index_key = f"face_{face_key}-{i}_{j}"
+
+            p1 = Vector(radius, -radius + i * horizontal_step, -radius + j * vertical_step)
+            p2 = Vector(radius, -radius + i * horizontal_step, -radius + (j + 1) * vertical_step)
+            p3 = Vector(radius, -radius + (i + 1) * horizontal_step, -radius + (j + 1) * vertical_step)
+            p4 = Vector(radius, -radius + (i + 1) * horizontal_step, -radius + j * vertical_step)
+
+            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+    # Do the YZ plane with X = -1
+    face_key = "X=-1"
+    for i in range(num_tiles_horizontal):
+        for j in range(num_tiles_vertical):
+            index_key = f"face_{face_key}-{i}_{j}"
+
+            p1 = Vector(-radius, -radius + i * horizontal_step, -radius + j * vertical_step)
+            p2 = Vector(-radius, -radius + i * horizontal_step, -radius + (j + 1) * vertical_step)
+            p3 = Vector(-radius, -radius + (i + 1) * horizontal_step, -radius + (j + 1) * vertical_step)
+            p4 = Vector(-radius, -radius + (i + 1) * horizontal_step, -radius + j * vertical_step)
+
+            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+
+
+    return CMP_tile_boundaries
+
+def get_CMP_tile_centers(num_tiles_horizontal: int, num_tiles_vertical: int, radius: float = 1.0) -> Dict[str, Vector]:
+    """
+    Computes the center points of CMP tiles. Each tile center is the average of the 4 corners of the tile.
+
+    Args:
+        num_tiles_horizontal: The number of horizontal spatial bins to tile a face of the CMP cube with.
+        num_tiles_vertical: The number of vertical spatial bins to tile a face of the CMP cube with.
+        radius: the radius of the circle.
+
+    Returns:
+        Dict: A dictionary where each tile index "face_FACE-i_j" has a center point (Vector).
+    """
+    
+    if num_tiles_horizontal <= 0 or num_tiles_vertical <= 0:
+        raise ValidationError("Number of tiles horizontal and vertical must be positive!")
+    
+    CMP_tile_centers = {}
+
     horizontal_step = 2 / num_tiles_horizontal
     vertical_step = 2 / num_tiles_vertical
 
@@ -333,13 +432,19 @@ def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
         for j in range(num_tiles_vertical):
             index_key = f"face_{face_key}-{i}_{j}"
 
+            # Define corners of the tile
             p1 = Vector(-1 + i * horizontal_step, -1 + j * vertical_step, 1)
             p2 = Vector(-1 + i * horizontal_step, -1 + (j + 1) * vertical_step, 1)
             p3 = Vector(-1 + (i + 1) * horizontal_step, -1 + (j + 1) * vertical_step, 1)
             p4 = Vector(-1 + (i + 1) * horizontal_step, -1 + j * vertical_step, 1)
 
-            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
-
+            # Compute the center of the tile (average of 4 corners)
+            center = Vector(
+                (p1.x + p2.x + p3.x + p4.x) / 4,
+                (p1.y + p2.y + p3.y + p4.y) / 4,
+                (p1.z + p2.z + p3.z + p4.z) / 4
+            )
+            CMP_tile_centers[index_key] = center
 
     # Do the XY plane with Z = -1
     face_key = "Z=-1"
@@ -352,7 +457,12 @@ def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
             p3 = Vector(-1 + (i + 1) * horizontal_step, -1 + (j + 1) * vertical_step, -1)
             p4 = Vector(-1 + (i + 1) * horizontal_step, -1 + j * vertical_step, -1)
 
-            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+            center = Vector(
+                (p1.x + p2.x + p3.x + p4.x) / 4,
+                (p1.y + p2.y + p3.y + p4.y) / 4,
+                (p1.z + p2.z + p3.z + p4.z) / 4
+            )
+            CMP_tile_centers[index_key] = center
 
     # Do the XZ plane with Y = 1
     face_key = "Y=1"
@@ -365,7 +475,12 @@ def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
             p3 = Vector(-1 + (i + 1) * horizontal_step, 1, -1 + (j + 1) * vertical_step)
             p4 = Vector(-1 + (i + 1) * horizontal_step, 1, -1 + j * vertical_step)
 
-            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+            center = Vector(
+                (p1.x + p2.x + p3.x + p4.x) / 4,
+                (p1.y + p2.y + p3.y + p4.y) / 4,
+                (p1.z + p2.z + p3.z + p4.z) / 4
+            )
+            CMP_tile_centers[index_key] = center
 
     # Do the XZ plane with Y = -1
     face_key = "Y=-1"
@@ -378,7 +493,12 @@ def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
             p3 = Vector(-1 + (i + 1) * horizontal_step, -1, -1 + (j + 1) * vertical_step)
             p4 = Vector(-1 + (i + 1) * horizontal_step, -1, -1 + j * vertical_step)
 
-            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+            center = Vector(
+                (p1.x + p2.x + p3.x + p4.x) / 4,
+                (p1.y + p2.y + p3.y + p4.y) / 4,
+                (p1.z + p2.z + p3.z + p4.z) / 4
+            )
+            CMP_tile_centers[index_key] = center
 
     # Do the YZ plane with X = 1
     face_key = "X=1"
@@ -391,7 +511,12 @@ def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
             p3 = Vector(1, -1 + (i + 1) * horizontal_step, -1 + (j + 1) * vertical_step)
             p4 = Vector(1, -1 + (i + 1) * horizontal_step, -1 + j * vertical_step)
 
-            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+            center = Vector(
+                (p1.x + p2.x + p3.x + p4.x) / 4,
+                (p1.y + p2.y + p3.y + p4.y) / 4,
+                (p1.z + p2.z + p3.z + p4.z) / 4
+            )
+            CMP_tile_centers[index_key] = center
 
     # Do the YZ plane with X = -1
     face_key = "X=-1"
@@ -404,10 +529,16 @@ def get_CMP_tile_boundaries(num_tiles_horizontal: int, num_tiles_vertical: int, 
             p3 = Vector(-1, -1 + (i + 1) * horizontal_step, -1 + (j + 1) * vertical_step)
             p4 = Vector(-1, -1 + (i + 1) * horizontal_step, -1 + j * vertical_step)
 
-            CMP_tile_boundaries[index_key] = [[p1, p2], [p1, p4], [p2, p3], [p3, p4]]
+            center = Vector(
+                (p1.x + p2.x + p3.x + p4.x) / 4,
+                (p1.y + p2.y + p3.y + p4.y) / 4,
+                (p1.z + p2.z + p3.z + p4.z) / 4
+            )
+            CMP_tile_centers[index_key] = center
+
+    return CMP_tile_centers
 
 
-    return CMP_tile_boundaries
 
 def vector_angle_distance(v1: Vector, v2: Vector) -> float:
     """Computes the angle between two vectors in radians.

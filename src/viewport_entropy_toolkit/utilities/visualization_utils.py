@@ -28,7 +28,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError, convert_vectors_to_coordinates
-from .data_utils import generate_fibonacci_lattice, spherical_interpolation, get_FB_tile_boundaries
+from .data_utils import generate_fibonacci_lattice, spherical_interpolation, get_FB_tile_boundaries, get_tile_corners
 
 @dataclass
 class VisualizationConfig:
@@ -831,38 +831,63 @@ def save_tiling_visualization_video(
 
 def weight_to_color(weight: float, min_weight: float, max_weight: float) -> Tuple[float, float, float]:
     """Maps a weight to a color."""
-    normalized_weight = (weight - min_weight) / (max_weight - min_weight)
+    if max_weight - min_weight > 0:
+      normalized_weight = (weight - min_weight) / (max_weight - min_weight)
+    else:
+      normalized_weight = 1
     colormap = plt.cm.inferno
     color = colormap(normalized_weight)
     return (color[0], color[1], color[2])
 
-def create_spherical_tile_patch(boundary: List[List[Tuple[float, float, float]]], sphere_radius=1.0, steps=500):
+def create_spherical_tile_patch(tile_corners: List[Vector], sphere_radius=1.0, steps=50):
     arc_points = []
-    for start, end in boundary:
+
+    # Interpolate between each pair of consecutive corner points
+    for i in range(len(tile_corners)):
+        start = tile_corners[i]
+        end = tile_corners[(i + 1) % len(tile_corners)]  # Wrap around to close the loop
         arc = [spherical_interpolation(start, end, t) for t in np.linspace(0, 1, steps)]
-        arc_points.extend(arc[:-1])
+        arc_points.extend(arc)
 
-    arc_points = np.array([sphere_radius * np.array(v) / np.linalg.norm(v) for v in arc_points])
+    # Normalize the arc points to be on the sphere surface
+    normalized_arc_points = np.array([sphere_radius * np.array(v) / np.linalg.norm(v) for v in arc_points])
 
+    # Calculate the center point (average of the corners, then normalized)
     center = np.mean(arc_points, axis=0)
-    center /= np.linalg.norm(center)
-    center *= sphere_radius
+    center_normalized = center / np.linalg.norm(center)
+    center_point = center_normalized * sphere_radius
 
-    points = [center] + arc_points.tolist()
+    # Include the center as the first point
+    points = [center_point] + normalized_arc_points.tolist()
+
     faces = []
+    num_boundary_points = len(normalized_arc_points)
 
-    for i in range(1, len(arc_points)):
-        faces.append([3, 0, i, i + 1])
-    faces.append([3, 0, len(arc_points), 1])
+    # Create faces connecting the center to consecutive boundary points
+    for i in range(num_boundary_points):
+        # The center is always index 0
+        p1_index = i + 1  # Index of the current boundary point
+        p2_index = (i + 1) % num_boundary_points + 1  # Index of the next boundary point (wraps around)
+        
+        faces.append([3, 0, p1_index, p2_index])
 
+    # Flatten the faces array
     faces = np.hstack(faces)
+
     patch = pv.PolyData(np.array(points), faces)
-    patch = patch.smooth(n_iter=10, relaxation_factor=0.1)
+
     return patch
 
+# Assuming you have your patch creation function like `create_spherical_tile_patch`
+def make_double_sided(patch):
+    # Flip the normals of the patch to create the back side
+    flipped_patch = patch.copy()
+    flipped_patch.flip_normals()
+    return flipped_patch
+
 def save_tiling_visualization_with_weights(
-        tile_boundaries: Dict[int, List[List[Tuple[float, float, float]]]],
-        tile_weights: Dict[int, float],
+        tile_boundaries: Dict[str, List[List[Tuple[float, float, float]]]],
+        tile_weights: Dict[str, float],
         output_dir: Path,
         steps=500,
         output_prefix: str=""
@@ -880,10 +905,19 @@ def save_tiling_visualization_with_weights(
     max_weight = max(tile_weights.values())
 
     for tile_index, boundaries in tile_boundaries.items():
-        patch = create_spherical_tile_patch(boundaries, sphere_radius=1.0, steps=steps)
+
+        tile_corners = get_tile_corners(boundaries)
+        patch = create_spherical_tile_patch(tile_corners, sphere_radius=1.0, steps=steps)
+        
         weight = tile_weights[tile_index]
         color = weight_to_color(weight, min_weight, max_weight)
+
+        # Make the mesh double-sided
+        double_sided_patch = make_double_sided(patch)
+
+        # Add both the original and flipped mesh to the plotter
         plotter.add_mesh(patch, color=color, opacity=1.0, lighting=False)
+        plotter.add_mesh(double_sided_patch, color=color, opacity=1.0, lighting=False)
 
     plotter.enable_parallel_projection()
     plotter.show_axes_all()
@@ -893,6 +927,77 @@ def save_tiling_visualization_with_weights(
 
     try:
         plotter.export_gltf(gltf_file_name)  # This will export in GLTF format by default
+        print(f"GLTF saved: {gltf_file_name}")
+    except Exception as e:
+        print(f"Error saving GLTF: {e}")
+
+    plotter.close()
+
+def plot_viewers_on_sphere(
+    vectors: Dict[str, Vector],
+    output_dir: Path,
+    output_prefix: str = ""
+):
+    """
+    Plots a black sphere with latitude and longitude grid lines and small red dots
+    at the positions specified in `vectors`.
+
+    Parameters:
+    - vectors: Dictionary where keys are vector identifiers and values are Vectors
+               representing a point on the sphere.
+    """
+    import pyvista as pv
+    import numpy as np
+    import os
+
+    pv.start_xvfb()
+    plotter = pv.Plotter()
+
+    # Create the black sphere with higher resolution
+    sphere = pv.Sphere(radius=1.0, theta_resolution=60, phi_resolution=60)
+    plotter.add_mesh(sphere, color='black', opacity=1.0)
+
+    # Add latitude and longitude grid lines
+    def add_lat_long_grid(plotter, radius=1.0, lat_step=15, lon_step=15):
+        # Latitude lines (horizontal)
+        for lat_deg in range(-90 + lat_step, 90, lat_step):
+            lat_rad = np.radians(lat_deg)
+            points = []
+            for lon_deg in range(0, 361, 5):
+                lon_rad = np.radians(lon_deg)
+                x = radius * np.cos(lat_rad) * np.cos(lon_rad)
+                y = radius * np.cos(lat_rad) * np.sin(lon_rad)
+                z = radius * np.sin(lat_rad)
+                points.append([x, y, z])
+            line = pv.lines_from_points(np.array(points), close=True)
+            plotter.add_mesh(line, color="white", line_width=1)
+
+        # Longitude lines (vertical)
+        for lon_deg in range(0, 360, lon_step):
+            lon_rad = np.radians(lon_deg)
+            points = []
+            for lat_deg in range(-90, 91, 5):
+                lat_rad = np.radians(lat_deg)
+                x = radius * np.cos(lat_rad) * np.cos(lon_rad)
+                y = radius * np.cos(lat_rad) * np.sin(lon_rad)
+                z = radius * np.sin(lat_rad)
+                points.append([x, y, z])
+            line = pv.lines_from_points(np.array(points), close=False)
+            plotter.add_mesh(line, color="white", line_width=1)
+
+    add_lat_long_grid(plotter)
+
+    # Plot small red dots at each viewer's position
+    for idx, vector in vectors.items():
+        pos = (vector.x, vector.y, vector.z)
+        dot_sphere = pv.Sphere(radius=0.03, center=pos, theta_resolution=20, phi_resolution=20)
+        plotter.add_mesh(dot_sphere, color='red')
+
+    # Save the plot as a GLTF file
+    gltf_file_name = os.path.join(str(output_dir), f'{output_prefix}point_visualization.glb')
+
+    try:
+        plotter.export_gltf(gltf_file_name)
         print(f"GLTF saved: {gltf_file_name}")
     except Exception as e:
         print(f"Error saving GLTF: {e}")

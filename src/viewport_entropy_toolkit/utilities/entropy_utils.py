@@ -15,7 +15,7 @@ import numpy as np
 from dataclasses import dataclass
 
 from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError
-from viewport_entropy_toolkit.utilities.data_utils import find_angular_distances
+
 
 @dataclass
 class EntropyConfig:
@@ -28,6 +28,7 @@ class EntropyConfig:
     """
     fov_angle: float = 120.0
     use_weight_distribution: bool = True
+    use_erroneous_ERP_distance: bool = False
     power_factor: float = 2.0
 
     def __post_init__(self) -> None:
@@ -36,6 +37,127 @@ class EntropyConfig:
             raise ValidationError("FOV angle must be between 0 and 360 degrees")
         if self.power_factor <= 0:
             raise ValidationError("Power factor must be positive")
+
+
+def vector_angle_distance(v1: Vector, v2: Vector) -> float:
+    """Computes the angle between two vectors in radians.
+    
+    Args:
+        v1: First vector.
+        v2: Second vector.
+    
+    Returns:
+        float: Angle between vectors in radians.
+    
+    Raises:
+        ValidationError: If vectors are invalid.
+    """
+    try:
+        v1_np = np.array([v1.x, v1.y, v1.z])
+        v2_np = np.array([v2.x, v2.y, v2.z])
+        
+        v1_normalized = v1_np / np.linalg.norm(v1_np)
+        v2_normalized = v2_np / np.linalg.norm(v2_np)
+        
+        dot_product = np.dot(v1_normalized, v2_normalized)
+        dot_product = np.clip(dot_product, -1.0, 1.0)
+        
+        return np.arccos(dot_product)
+        
+    except Exception as e:
+        raise ValidationError(f"Error calculating vector angle: {str(e)}")
+
+
+def find_angular_distances(
+    vector: Vector,
+    tile_centers: List[Vector]
+) -> np.ndarray:
+    """Finds angular distances between a vector and tile centers.
+    
+    Args:
+        vector: Reference vector.
+        tile_centers: List of tile center vectors.
+    
+    Returns:
+        np.ndarray: Array of [tile_index, angular_distance] pairs.
+    """
+    distances = np.array([
+        [i, vector_angle_distance(vector, center)]
+        for i, center in enumerate(tile_centers)
+    ])
+    return distances
+
+def find_angular_distances_from_dict(
+    vector: Vector,
+    tile_centers: Dict[str, Vector]
+) -> np.ndarray:
+    """
+    Finds angular distances between a vector and tile centers from a dictionary.
+
+    Args:
+        vector: Reference vector.
+        tile_centers: Dictionary where keys are tile IDs and values are Vector centers.
+
+    Returns:
+        np.ndarray: Array of [tile_key, angular_distance] pairs as a structured array.
+    """
+    distances = np.array([
+        (key, vector_angle_distance(vector, center))
+        for key, center in tile_centers.items()
+    ], dtype=[("tile_key", "U50"), ("angular_distance", "f8")])
+    
+    return distances
+
+def ERP_distance(v1: Vector, v2: Vector) -> float:
+    """Computes the distance in latitude and longitude (ERP), in radians, between two vectors.
+    
+    Args:
+        v1: First vector.
+        v2: Second vector.
+    
+    Returns:
+        float: Distance in ERP between vectors.
+    
+    Raises:
+        ValidationError: If vectors are invalid.
+    """
+    try:
+        radial1 = v1.to_spherical()
+        radial2 = v2.to_spherical()
+
+        lat_dist = np.radians(radial1.lat) - np.radians(radial2.lat)
+        lon_dist = np.radians(radial1.lon) - np.radians(radial2.lon)
+        
+        ERP_dist = np.sqrt(lat_dist ** 2 + lon_dist ** 2)
+
+        print(ERP_dist)
+
+        return ERP_dist
+        
+    except Exception as e:
+        raise ValidationError(f"Error calculating ERP distance: {str(e)}")
+
+def find_ERP_distances_from_dict(
+  vector: Vector,
+    tile_centers: Dict[str, Vector]
+    ) -> np.ndarray:
+    """
+    Finds ERP distances between a vector and tile centers from a dictionary.
+
+    Args:
+        vector: Reference vector.
+        tile_centers: Dictionary where keys are tile IDs and values are Vector centers.
+
+    Returns:
+        np.ndarray: Array of [tile_key, ERP_distance] pairs as a structured array.
+    """
+    distances = np.array([
+        (key, ERP_distance(vector, center))
+        for key, center in tile_centers.items()
+    ], dtype=[("tile_key", "U50"), ("angular_distance", "f8")])
+
+    return distances
+
 
 
 def find_nearest_tile(
@@ -62,7 +184,7 @@ def calculate_tile_weights(
     tile_centers: List[Vector],
     config: EntropyConfig
 ) -> Dict[Vector, float]:
-    """Calculates weight distribution across tiles for a vector using a set of tile centers.
+    """Calculates weight distribution across tiles for a vector using fibonacci lattice tiling.
     
     Args:
         vector: Input vector.
@@ -93,6 +215,53 @@ def calculate_tile_weights(
         nearest_idx = int(distances[0][0])
         weights[tile_centers[nearest_idx]] = 1.0
     
+    return weights
+
+def calculate_tile_weights_by_index(
+    vector: Vector,
+    tile_centers: Dict[str, Vector],
+    config: EntropyConfig
+) -> Dict[int, float]:
+    """Calculates weight distribution across tiles for a vector using a set of tile centers.
+
+    Args:
+        vector: Input vector.
+        tile_centers: List of tile center vectors.
+        config: Entropy calculation configuration.
+
+    Returns:
+        Dict[int, float]: Dictionary mapping tile index to weights.
+    """
+    weights = {}
+    max_angular_distance = np.radians(config.fov_angle / 2.0)
+
+    # Calculate angular distances
+    if not config.use_erroneous_ERP_distance:
+      distances = find_angular_distances_from_dict(vector, tile_centers)
+    else:
+      distances = find_ERP_distances_from_dict(vector, tile_centers)
+    
+    
+    distances = sorted(distances, key=lambda x: x[1])
+
+    if config.use_weight_distribution:
+        # Distribute weights based on angular distance
+        for tile_idx, distance in distances:
+            tile_idx_str = str(tile_idx)
+            if distance < max_angular_distance:
+                weight = ((max_angular_distance - distance) / max_angular_distance) ** config.power_factor
+                weights[tile_idx_str] = weight
+            else:
+                break
+    else:
+        # Assign equal weight to tiles in FOV
+        for tile_idx, distance in distances:
+            tile_idx_str = str(tile_idx)
+            if distance < max_angular_distance:
+                weights[tile_idx_str] = 1.0
+            else:
+                break
+
     return weights
 
 def compute_spatial_entropy(
