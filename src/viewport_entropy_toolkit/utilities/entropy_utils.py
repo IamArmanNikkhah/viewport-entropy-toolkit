@@ -90,8 +90,6 @@ class EntropyConfig:
         """Validates configuration parameters."""
         if not 0 < self.fov_angle <= 360:
             raise ValidationError("FOV angle must be between 0 and 360 degrees")
-        if self.power_factor <= 0:
-            raise ValidationError("Power factor must be positive")
 
 def find_nearest_tile(
         vector: Vector,
