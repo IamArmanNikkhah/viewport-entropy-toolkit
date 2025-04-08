@@ -92,8 +92,7 @@ config = AnalyzerConfig(
     video_height=400,
     tile_counts=[50, 100, 200],
     entropy_config=EntropyConfig(
-        fov_angle=90.0,
-        use_weight_distribution=True
+        fov_angle=90.0
     )
 )
 
@@ -170,12 +169,10 @@ AnalyzerConfig(
     video_width=100,         # Video width in pixels
     video_height=200,        # Video height in pixels
     tile_counts=[20, 50],    # Number of tiles for analysis
-    use_weight_distribution=True  # Use weighted distribution
 )
 
 EntropyConfig(
-    fov_angle=120.0,        # Field of view angle
-    power_factor=2.0        # Weight calculation power factor
+    fov_angle=120.0        # Field of view angle
 )
 ```
 

@@ -128,8 +128,6 @@ def format_trajectory_data(
 class EntropyConfig:
     """Configuration for entropy calculations."""
     fov_angle: float = 120.0
-    use_weight_distribution: bool = True
-    power_factor: float = 2.0
 ```
 
 ### Functions
@@ -261,7 +259,6 @@ class AnalyzerConfig:
     visualization_config: VisualizationConfig = field(
         default_factory=VisualizationConfig
     )
-    use_weight_distribution: bool = True
     
     def get_output_path(self, base_name: str, extension: str) -> Path:
         """Generates output file path."""
@@ -312,8 +309,7 @@ config = AnalyzerConfig(
     video_height=400,
     tile_counts=[50, 100, 200],
     entropy_config=EntropyConfig(
-        fov_angle=90.0,
-        use_weight_distribution=True
+        fov_angle=90.0
     )
 )
 

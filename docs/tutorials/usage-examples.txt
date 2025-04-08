@@ -28,9 +28,7 @@ from pathlib import Path
 
 # Create custom configurations
 entropy_config = EntropyConfig(
-    fov_angle=90.0,  # Change FOV angle
-    use_weight_distribution=True,
-    power_factor=1.5
+    fov_angle=90.0  # Change FOV angle
 )
 
 viz_config = VisualizationConfig(
@@ -48,8 +46,7 @@ config = AnalyzerConfig(
     tile_counts=[50, 100, 200],  # Custom tile counts
     output_dir=Path("custom_output"),
     entropy_config=entropy_config,
-    visualization_config=viz_config,
-    use_weight_distribution=True
+    visualization_config=viz_config
 )
 
 # Create analyzer with custom configuration
@@ -218,7 +215,6 @@ tile_counts: List[int]  # Number of tiles for different scales
 
 # Entropy configuration
 fov_angle: float  # Field of view angle in degrees
-use_weight_distribution: bool  # Whether to use weighted distribution
 power_factor: float  # Power factor for weight calculation
 
 # Visualization configuration

@@ -47,7 +47,6 @@ class AnalyzerConfig:
         output_dir (Path): Directory for output files.
         entropy_config (EntropyConfig): Configuration for entropy calculations.
         visualization_config (VisualizationConfig): Configuration for visualization.
-        use_weight_distribution (bool): Whether to use weighted distribution.
     """
     video_width: int = DEFAULT_VIDEO_DIMENSIONS['width']
     video_height: int = DEFAULT_VIDEO_DIMENSIONS['height']
@@ -92,7 +91,6 @@ class NaiveAnalyzerConfig:
         output_dir (Path): Directory for output files.
         entropy_config (EntropyConfig): Configuration for entropy calculations.
         visualization_config (VisualizationConfig): Configuration for visualization.
-        use_weight_distribution (bool): Whether to use weighted distribution.
     """
     video_width: int = DEFAULT_VIDEO_DIMENSIONS['width']
     video_height: int = DEFAULT_VIDEO_DIMENSIONS['height']

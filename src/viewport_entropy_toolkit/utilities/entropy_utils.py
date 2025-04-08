@@ -12,10 +12,65 @@ Functions:
 
 from typing import Dict, List, Tuple, Optional
 import numpy as np
-from dataclasses import dataclass
+from enum import Enum
+from dataclasses import dataclass, field
+import math
 
 from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError
 from viewport_entropy_toolkit.utilities.data_utils import find_angular_distances, find_angular_distances_from_dict, find_ERP_distances_from_dict
+
+
+class HeatFunctionType(Enum):
+    GAUSSIAN = "gaussian"
+    EXPONENTIAL = "exponential"
+    UNIFORM = "uniform"
+    NEAREST_NEIGHBOR = "nearest_neighbor"
+
+class HeatFunction:
+    def __init__(self, heat_function_type):
+        self.heat_function_type = heat_function_type
+
+    def __call__(self, x: float) -> float:
+        if not 0.0 <= x <= 1.0:
+            raise ValueError(f"Input to heat function must be in [0, 1]. Got: {x}")
+        return self._compute(x)
+
+    def _compute(self, x: float) -> float:
+        """To be implemented by subclasses."""
+        raise NotImplementedError
+
+
+class GaussianHeatFunction(HeatFunction):
+    def __init__(self, sigma: float = 1.0):
+        super().__init__(HeatFunctionType.GAUSSIAN)
+        self.sigma = sigma
+
+    def _compute(self, x: float) -> float:
+        # Standard Gaussian centered at 0
+        return math.exp(-(x ** 2) / (2 * self.sigma ** 2))
+
+
+class ExponentialHeatFunction(HeatFunction):
+    def __init__(self, decay_factor: float = 1.0):
+        super().__init__(HeatFunctionType.EXPONENTIAL)
+        self.decay_factor = decay_factor
+    
+    def _compute(self, x: float) -> float:
+        # decay from 0 to 1
+        return math.exp(-self.decay_factor * x)
+
+
+class UniformHeatFunction(HeatFunction):
+    def __init__(self):
+        super().__init__(HeatFunctionType.UNIFORM)
+    
+    def _compute(self, x: float) -> float:
+        return 1.0
+
+
+class NearestNeighborHeatFunction(HeatFunction):
+    def __init__(self):
+        super().__init__(HeatFunctionType.NEAREST_NEIGHBOR)
 
 @dataclass
 class EntropyConfig:
@@ -23,13 +78,13 @@ class EntropyConfig:
     
     Attributes:
         fov_angle (float): Field of view angle in degrees.
-        use_weight_distribution (bool): Whether to use weighted distribution.
-        power_factor (float): Power factor for weight calculation.
+        use_erroneous_ERP_distance (bool): True if using the ERP Euclidean distance. If false, use angular distance on sphere.
+        heat_function (HeatFunction): The specified heat function to use. It takes in a value from 0 to 1 and returns the given heat.
     """
     fov_angle: float = 120.0
-    use_weight_distribution: bool = True
     use_erroneous_ERP_distance: bool = False
-    power_factor: float = 2.0
+    
+    heat_function: HeatFunction = field(default_factory=GaussianHeatFunction)
 
     def __post_init__(self) -> None:
         """Validates configuration parameters."""
@@ -37,8 +92,6 @@ class EntropyConfig:
             raise ValidationError("FOV angle must be between 0 and 360 degrees")
         if self.power_factor <= 0:
             raise ValidationError("Power factor must be positive")
-
-
 
 def find_nearest_tile(
         vector: Vector,
@@ -81,12 +134,13 @@ def calculate_tile_weights(
     distances = find_angular_distances(vector, tile_centers)
     distances = sorted(distances, key=lambda x: x[1])
     
-    if config.use_weight_distribution:
+    if config.heat_function.heat_function_type != HeatFunctionType.NEAREST_NEIGHBOR:
         # Distribute weights based on angular distance
         for tile_idx, distance in distances:
             if distance < max_angular_distance:
                 tile = tile_centers[int(tile_idx)]
-                weight = ((max_angular_distance - distance) / max_angular_distance) ** config.power_factor
+                normalized_distance = (max_angular_distance - distance) / max_angular_distance
+                weight = config.heat_function(normalized_distance)
                 weights[tile] = weight
             else:
                 break
@@ -124,23 +178,20 @@ def calculate_tile_weights_by_index(
     
     distances = sorted(distances, key=lambda x: x[1])
 
-    if config.use_weight_distribution:
+    if config.heat_function.heat_function_type != HeatFunctionType.NEAREST_NEIGHBOR:
         # Distribute weights based on angular distance
         for tile_idx, distance in distances:
             tile_idx_str = str(tile_idx)
             if distance < max_angular_distance:
-                weight = ((max_angular_distance - distance) / max_angular_distance) ** config.power_factor
+                normalized_distance = (max_angular_distance - distance) / max_angular_distance
+                weight = config.heat_function(normalized_distance)
                 weights[tile_idx_str] = weight
             else:
                 break
     else:
-        # Assign equal weight to tiles in FOV
-        for tile_idx, distance in distances:
-            tile_idx_str = str(tile_idx)
-            if distance < max_angular_distance:
-                weights[tile_idx_str] = 1.0
-            else:
-                break
+        # Assign weight to only to the nearest tile
+        nearest_tile_idx_str = distances[0][0]
+        weights[nearest_tile_idx_str] = 1.0
 
     return weights
 
@@ -198,7 +249,7 @@ def compute_spatial_entropy(
         spatial_entropy -= proportion * np.log2(proportion)
     
     # Calculate maximum possible entropy
-    if config.use_weight_distribution or total_weight > num_tiles:
+    if config.heat_function.heat_function_type != HeatFunctionType.NEAREST_NEIGHBOR or total_weight > num_tiles:
         max_proportion = 1.0 / num_tiles
         max_entropy = -num_tiles * max_proportion * np.log2(max_proportion)
     else:
@@ -436,7 +487,7 @@ def compute_naive_spatial_entropy(
         spatial_entropy -= proportion * np.log2(proportion)
     
     # Calculate maximum possible entropy
-    if config.use_weight_distribution or total_weight > num_tiles:
+    if config.heat_function.heat_function_type != HeatFunctionType.NEAREST_NEIGHBOR or total_weight > num_tiles:
         max_proportion = 1.0 / num_tiles
         max_entropy = -num_tiles * max_proportion * np.log2(max_proportion)
     else:
