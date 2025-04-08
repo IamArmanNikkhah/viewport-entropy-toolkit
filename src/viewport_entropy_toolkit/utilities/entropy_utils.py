@@ -41,7 +41,7 @@ class HeatFunction:
 
 
 class GaussianHeatFunction(HeatFunction):
-    def __init__(self, sigma: float = 1.0):
+    def __init__(self, sigma: float = 0.3):
         super().__init__(HeatFunctionType.GAUSSIAN)
         self.sigma = sigma
 
@@ -51,7 +51,7 @@ class GaussianHeatFunction(HeatFunction):
 
 
 class ExponentialHeatFunction(HeatFunction):
-    def __init__(self, decay_factor: float = 1.0):
+    def __init__(self, decay_factor: float = 2.0):
         super().__init__(HeatFunctionType.EXPONENTIAL)
         self.decay_factor = decay_factor
     
