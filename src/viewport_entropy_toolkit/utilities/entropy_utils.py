@@ -126,7 +126,7 @@ def calculate_tile_weights(
         Dict[Vector, float]: Dictionary mapping tile centers to weights.
     """
     weights = {}
-    max_angular_distance = np.radians(config.fov_angle / 2.0)
+    max_distance = np.radians(config.fov_angle / 2.0)
     
     # Calculate angular distances
     distances = find_angular_distances(vector, tile_centers)
@@ -135,9 +135,9 @@ def calculate_tile_weights(
     if config.heat_function.heat_function_type != HeatFunctionType.NEAREST_NEIGHBOR:
         # Distribute weights based on angular distance
         for tile_idx, distance in distances:
-            if distance < max_angular_distance:
+            if distance < max_distance:
                 tile = tile_centers[int(tile_idx)]
-                normalized_distance = (max_angular_distance - distance) / max_angular_distance
+                normalized_distance = distance / max_distance
                 weight = config.heat_function(normalized_distance)
                 weights[tile] = weight
             else:
@@ -165,7 +165,7 @@ def calculate_tile_weights_by_index(
         Dict[int, float]: Dictionary mapping tile index to weights.
     """
     weights = {}
-    max_angular_distance = np.radians(config.fov_angle / 2.0)
+    max_distance = np.radians(config.fov_angle / 2.0)
 
     # Calculate angular distances
     if not config.use_erroneous_ERP_distance:
@@ -180,8 +180,8 @@ def calculate_tile_weights_by_index(
         # Distribute weights based on angular distance
         for tile_idx, distance in distances:
             tile_idx_str = str(tile_idx)
-            if distance < max_angular_distance:
-                normalized_distance = (max_angular_distance - distance) / max_angular_distance
+            if distance < max_distance:
+                normalized_distance = distance / max_distance
                 weight = config.heat_function(normalized_distance)
                 weights[tile_idx_str] = weight
             else:
