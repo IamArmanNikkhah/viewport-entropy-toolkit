@@ -138,13 +138,13 @@ def vector_angle_distance(v1: Vector, v2: Vector) -> float:
     """Computes angle between vectors in radians."""
 ```
 
-#### find_angular_distances
+#### find_geodesic_distances
 ```python
-def find_angular_distances(
+def find_geodesic_distances(
     vector: Vector,
     tile_centers: List[Vector]
 ) -> np.ndarray:
-    """Finds angular distances between vector and tile centers."""
+    """Finds geodesic distances between vector and tile centers."""
 ```
 
 #### generate_fibonacci_lattice

@@ -23,7 +23,7 @@ sequenceDiagram
         Analyzer->>EntropyUtils: compute_spatial_entropy()
         activate EntropyUtils
         
-        EntropyUtils->>VectorOps: calculate_angular_distances()
+        EntropyUtils->>VectorOps: calculate_geodesic_distances()
         activate VectorOps
         VectorOps-->>EntropyUtils: distances
         deactivate VectorOps

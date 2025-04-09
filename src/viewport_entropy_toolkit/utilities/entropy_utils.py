@@ -2,7 +2,7 @@
 
 This module provides utilities for calculating spatial entropy and managing tile-based
 analysis of viewport trajectories in 360-degree videos. It includes functions for
-generating Fibonacci lattices, calculating angular distances, and computing spatial entropy.
+generating Fibonacci lattices, calculating geodesic distances, and computing spatial entropy.
 
 Functions:
     compute_spatial_entropy: Calculates spatial entropy for a set of vectors.
@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 import math
 
 from viewport_entropy_toolkit import Vector, RadialPoint, ValidationError
-from viewport_entropy_toolkit.utilities.data_utils import find_angular_distances, find_angular_distances_from_dict, find_ERP_distances_from_dict
+from viewport_entropy_toolkit.utilities.data_utils import find_geodesic_distances, find_geodesic_distances_from_dict, find_ERP_distances_from_dict
 
 
 class HeatFunctionType(Enum):
@@ -78,7 +78,7 @@ class EntropyConfig:
     
     Attributes:
         fov_angle (float): Field of view angle in degrees.
-        use_erroneous_ERP_distance (bool): True if using the ERP Euclidean distance. If false, use angular distance on sphere.
+        use_erroneous_ERP_distance (bool): True if using the ERP Euclidean distance. If false, use geodesic distance on sphere.
         heat_function (HeatFunction): The specified heat function to use. It takes in a value from 0 to 1 and returns the given heat.
     """
     fov_angle: float = 120.0
@@ -105,7 +105,7 @@ def find_nearest_tile(
     Returns:
         int: the index of tile_centers for the closest tile.
     """
-    distances = find_angular_distances(vector, tile_centers)
+    distances = find_geodesic_distances(vector, tile_centers)
     nearest_tile = int(distances[np.argmin(distances[:, 1])][0])
 
     return nearest_tile
@@ -128,12 +128,12 @@ def calculate_tile_weights(
     weights = {}
     max_distance = np.radians(config.fov_angle / 2.0)
     
-    # Calculate angular distances
-    distances = find_angular_distances(vector, tile_centers)
+    # Calculate geodesic distances
+    distances = find_geodesic_distances(vector, tile_centers)
     distances = sorted(distances, key=lambda x: x[1])
     
     if config.heat_function.heat_function_type != HeatFunctionType.NEAREST_NEIGHBOR:
-        # Distribute weights based on angular distance
+        # Distribute weights based on geodesic distance
         for tile_idx, distance in distances:
             if distance < max_distance:
                 tile = tile_centers[int(tile_idx)]
@@ -167,9 +167,9 @@ def calculate_tile_weights_by_index(
     weights = {}
     max_distance = np.radians(config.fov_angle / 2.0)
 
-    # Calculate angular distances
+    # Calculate geodesic distances
     if not config.use_erroneous_ERP_distance:
-      distances = find_angular_distances_from_dict(vector, tile_centers)
+      distances = find_geodesic_distances_from_dict(vector, tile_centers)
     else:
       distances = find_ERP_distances_from_dict(vector, tile_centers)
     
@@ -177,7 +177,7 @@ def calculate_tile_weights_by_index(
     distances = sorted(distances, key=lambda x: x[1])
 
     if config.heat_function.heat_function_type != HeatFunctionType.NEAREST_NEIGHBOR:
-        # Distribute weights based on angular distance
+        # Distribute weights based on geodesic distance
         for tile_idx, distance in distances:
             tile_idx_str = str(tile_idx)
             if distance < max_distance:
@@ -310,7 +310,7 @@ def compute_transition_entropy(
         
 
         # Find nearest tile for prior and current vectors
-        distances = find_angular_distances(vector, tile_centers)
+        distances = find_geodesic_distances(vector, tile_centers)
         tile_assignments[identifier] = int(distances[np.argmin(distances[:, 1])][0])
 
         previous_nearest_tile_index = find_nearest_tile(prior_vector, tile_centers)

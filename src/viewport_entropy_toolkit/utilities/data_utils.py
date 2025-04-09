@@ -11,9 +11,9 @@ Functions:
     get_CMP_tile_boundaries: Generates the tiles (their boundaries) for CMP tiling.
     get_CMP_tile_centers: Generates the tile centers for CMP tiling.
 
-    vector_angle_distance: Finds the angular distance between two Vectors.
-    find_angular_distances: Finds the angular distance between a single Vector and a list of other Vectors.
-    find_angular_distances_from_dict: Finds the angular distances between a single Vector and a dictionary of other Vectors.
+    vector_angle_distance: Finds the angle between two Vectors.
+    find_geodesic_distances: Finds the geodesic distance between a single Vector and a list of other Vectors.
+    find_geodesic_distances_from_dict: Finds the geodesic distances between a single Vector and a dictionary of other Vectors.
     ERP_distance: Finds the Euclidean distance on an ERP between two Vectors.
     find_ERP_distances_from_dict: Finds the ERP distances between a single Vector and a dictionary of other Vectors.
 
@@ -103,7 +103,7 @@ def get_FB_tile_boundaries(tile_count: int, furthest_search_factor: float = 1.7)
         great_circle_vectors = {}
         neighbors = []
 
-        # Extract all of the neighbors of the current tile, and the angular distance between the current tile center and each neighbor's center.
+        # Extract all of the neighbors of the current tile, and the geodesic distance between the current tile center and each neighbor's center.
         for index_j in range(0, len(tile_centers_vectors)):
             if (index_j == index_i):
                 continue
@@ -576,18 +576,18 @@ def vector_angle_distance(v1: Vector, v2: Vector) -> float:
         raise ValidationError(f"Error calculating vector angle: {str(e)}")
 
 
-def find_angular_distances(
+def find_geodesic_distances(
     vector: Vector,
     vectors: List[Vector]
 ) -> np.ndarray:
-    """Finds angular distances between a single Vector and a list of Vectors.
+    """Finds geodesic distances between a single Vector and a list of Vectors.
     
     Args:
         vector: Reference vector.
         vectors: List of Vectors.
     
     Returns:
-        np.ndarray: Array of [tile_index, angular_distance] pairs.
+        np.ndarray: Array of [tile_index, geodesic_distance] pairs.
     """
     distances = np.array([
         [int(i), vector_angle_distance(vector, center)]
@@ -595,24 +595,24 @@ def find_angular_distances(
     ])
     return distances
 
-def find_angular_distances_from_dict(
+def find_geodesic_distances_from_dict(
     vector: Vector,
     tile_centers: Dict[str, Vector]
 ) -> np.ndarray:
     """
-    Finds angular distances between a vector and tile centers from a dictionary.
+    Finds geodesic distances between a vector and tile centers from a dictionary.
 
     Args:
         vector: Reference vector.
         tile_centers: Dictionary where keys are tile IDs and values are Vector centers.
 
     Returns:
-        np.ndarray: Array of [tile_key, angular_distance] pairs as a structured array.
+        np.ndarray: Array of [tile_key, geodesic_distance] pairs as a structured array.
     """
     distances = np.array([
         (key, vector_angle_distance(vector, center))
         for key, center in tile_centers.items()
-    ], dtype=[("tile_key", "U50"), ("angular_distance", "f8")])
+    ], dtype=[("tile_key", "U50"), ("geodesic_distance", "f8")])
     
     return distances
 
@@ -660,7 +660,7 @@ def find_ERP_distances_from_dict(
     distances = np.array([
         (key, ERP_distance(vector, center))
         for key, center in tile_centers.items()
-    ], dtype=[("tile_key", "U50"), ("angular_distance", "f8")])
+    ], dtype=[("tile_key", "U50"), ("geodesic_distance", "f8")])
 
     return distances
 
