@@ -65,6 +65,8 @@ class RadialPoint:
     This class represents a point on a sphere using longitude and latitude coordinates,
     typically used for representing viewing directions in 360-degree videos.
     
+    At lon = 0 and lat = 0, the equivalent vector would be (x=1, y=0, z=0).
+
     Attributes:
         lon (float): Longitude in degrees, range [-180, 180].
         lat (float): Latitude in degrees, range [-90, 90].
@@ -111,9 +113,9 @@ class Vector:
     typically used as a unit vector representing a viewing direction.
     
     Attributes:
-        x (float): X coordinate.
-        y (float): Y coordinate.
-        z (float): Z coordinate.
+        x (float): X coordinate. The X axis is the front-back axis.
+        y (float): Y coordinate. The Y axis is the left-right axis.
+        z (float): Z coordinate. The Z axis is the up-down axis.
     
     Raises:
         ValidationError: If the vector has zero length.

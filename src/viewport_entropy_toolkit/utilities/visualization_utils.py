@@ -25,6 +25,7 @@ Functions:
     save_tiling_visualization_with_weights: Saves an arbitrary tiling on sphere with weights as a .glb.
     plot_points_on_sphere: Plots a set of Vector points on the sphere.
     save_heatmap_ERP_image: Saves an ERP heatmap based on tiling weights on an ERP image.
+    save_CMP_heatmap_image: Saves a CMP heatmap based on tiling weights on a CMP image.
 """
 
 import os
@@ -1078,3 +1079,131 @@ def save_heatmap_ERP_image(
     plt.close()
 
     print(f"ERP heatmap saved to: {output_path}")
+
+def save_CMP_heatmap_image(
+    tile_weights: Dict[str, float],
+    num_tiles_horizontal: int,
+    num_tiles_vertical: int,
+    output_dir: Path,
+    output_prefix: str = "",
+):
+    """Creates and saves a CMP image using tile weights to generate a heatmap for each face.
+
+    Args:
+        tile_weights: Dictionary where keys are strings in the format "X=1-i_j" or "X=-1-i_j" and values are weights.
+        num_tiles_horizontal: The number of tiles horizontally in the CMP.
+        num_tiles_vertical: The number of tiles vertically in the CMP.
+        output_dir: The path to the folder to save the file to.
+        output_prefix: A prefix to place before the standard file name.
+    """
+    
+    # Calculate the size of each face based on the number of tiles
+    face_width = num_tiles_horizontal * 100  # 100 pixels per tile
+    face_height = num_tiles_vertical * 100  # 100 pixels per tile
+    
+    # Create an empty image for the unfolded CMP grid (with transparent background)
+    grid_width = face_width * 4  # 4 faces horizontally (left, front, right, back)
+    grid_height = face_height * 3  # 3 faces vertically (top, left, bottom)
+    image = np.zeros((grid_height, grid_width, 4), dtype=np.float32)  # clear RGBA image
+    
+    # Prepare heatmaps for each face
+    heatmaps = {
+        "top": np.zeros((num_tiles_vertical, num_tiles_horizontal)),
+        "bottom": np.zeros((num_tiles_vertical, num_tiles_horizontal)),
+        "left": np.zeros((num_tiles_vertical, num_tiles_horizontal)),
+        "front": np.zeros((num_tiles_vertical, num_tiles_horizontal)),
+        "right": np.zeros((num_tiles_vertical, num_tiles_horizontal)),
+        "back": np.zeros((num_tiles_vertical, num_tiles_horizontal)),
+    }
+
+    # Map tile_weights to corresponding heatmap
+    for tile_index, weight in tile_weights.items():
+        try:
+            # Split the tile_index at the last '-'
+            plane_str, index_str = tile_index.rsplit('-', 1)
+            
+            # Parse the X part (1 for top, -1 for bottom)
+            plane_val = int(plane_str.split('=')[1])
+            plane = (plane_str.split('=')[0].split('_')[1])
+
+            # Parse the i, j part (horizontal and vertical indices)
+            i, j = map(int, index_str.split('_'))
+        except ValueError:
+            raise ValueError(f"Invalid tile_index format: '{tile_index}'. Expected format 'face_X=-1-i_j'.")
+
+        # Determine which face the tile belongs to based on Plane
+        if plane == "Z" and plane_val == 1:  # Top face
+            heatmaps["top"][i, j] = weight
+        elif plane == "Z" and plane_val == -1:  # Bottom face
+            heatmaps["bottom"][i, j] = weight
+        elif plane == "X" and plane_val == 1:
+            heatmaps["front"][j, i] = weight
+        elif plane == "X" and plane_val == -1:
+            heatmaps["back"][j, i] = weight
+        elif plane == "Y" and plane_val == 1:
+            heatmaps["right"][j, i] = weight
+        elif plane == "Y" and plane_val == -1:
+            heatmaps["left"][j, i] = weight
+
+    # Find the global maximum value across all heatmaps
+    global_max_val = np.max([np.max(heatmaps[face]) for face in heatmaps])
+
+    # Normalize all heatmaps by the global maximum value
+    for face in heatmaps:
+        if global_max_val > 0:
+            heatmaps[face] = heatmaps[face] / global_max_val
+
+    # Generate the heatmap colors for each face using a colormap
+    cmap = plt.cm.inferno  # You can change this to any colormap you prefer
+    top_face_color = cmap(heatmaps["top"])
+    bottom_face_color = cmap(heatmaps["bottom"])
+    left_face_color = cmap(heatmaps["left"])
+    front_face_color = cmap(heatmaps["front"])
+    right_face_color = cmap(heatmaps["right"])
+    back_face_color = cmap(heatmaps["back"])
+
+    # Define positions of the faces in the unfolded grid
+    top_start = (0, face_width)  # Top face position
+    bottom_start = (2 * face_height, face_width)  # Bottom face position
+    left_start = (face_height, 0)  # Left face position
+    front_start = (face_height, face_width)  # Front face position
+    right_start = (face_height, 2 * face_width)  # Right face position
+    back_start = (face_height, 3 * face_width)  # Back face position
+
+    # Assign colors to each face in the unfolded grid
+    face_positions = [
+        (top_start, top_face_color),
+        (bottom_start, bottom_face_color),
+        (left_start, left_face_color),
+        (front_start, front_face_color),
+        (right_start, right_face_color),
+        (back_start, back_face_color),
+    ]
+    
+    # Resize heatmaps to fit the scale of each face in the unfolded grid
+    for (y, x), color in face_positions:
+        # Scale heatmap to match face size (num_tiles * 100)
+        scaled_color = np.kron(color, np.ones((100, 100, 1)))  # Scale by 100x100
+        image[y:y + face_height, x:x + face_width] = scaled_color
+
+    # Rotate the front X face faces: Flip vertically to line up the correct edges
+    image[front_start[0]:front_start[0] + face_height, front_start[1]:front_start[1] + face_width] = np.flipud(image[front_start[0]:front_start[0] + face_height, front_start[1]:front_start[1] + face_width])
+    
+    # Rotate the Y (right and left) faces: Flip horizontally and vertically to line up the correct edges
+    image[right_start[0]:right_start[0] + face_height, right_start[1]:right_start[1] + face_width] = np.flipud(np.fliplr(image[right_start[0]:right_start[0] + face_height, right_start[1]:right_start[1] + face_width]))
+    
+    # Rotate the bottom face: Flip the bottom face vertically to match the values
+    image[bottom_start[0]:bottom_start[0] + face_height, bottom_start[1]:bottom_start[1] + face_width] = np.flipud(image[bottom_start[0]:bottom_start[0] + face_height, bottom_start[1]:bottom_start[1] + face_width])
+
+    # Create the figure
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.imshow(image)
+    ax.axis('off')
+
+    # Save the image
+    filename = f"{output_prefix}CMP_({num_tiles_horizontal}x{num_tiles_vertical})-CMP_heatmap.png"
+    output_path = output_dir / filename
+    plt.savefig(output_path, bbox_inches='tight', pad_inches=0, transparent=True)
+    plt.close()
+
+    print(f"CMP unfolded layout with tile weights saved to: {output_path}")
