@@ -1186,12 +1186,17 @@ def save_CMP_heatmap_image(
         scaled_color = np.kron(color, np.ones((100, 100, 1)))  # Scale by 100x100
         image[y:y + face_height, x:x + face_width] = scaled_color
 
-    # Rotate the front X face faces: Flip vertically to line up the correct edges
+    # Rotate the front X face faces: Flip vertically and/or horizontally to line up the correct edges
     image[front_start[0]:front_start[0] + face_height, front_start[1]:front_start[1] + face_width] = np.flipud(image[front_start[0]:front_start[0] + face_height, front_start[1]:front_start[1] + face_width])
-    
-    # Rotate the Y (right and left) faces: Flip horizontally and vertically to line up the correct edges
+    image[back_start[0]:back_start[0] + face_height, back_start[1]:back_start[1] + face_width] = np.flipud(np.fliplr(image[back_start[0]:back_start[0] + face_height, back_start[1]:back_start[1] + face_width]))
+
+
+    # Rotate the Y (right and left) faces: Flip vertically and/or horizontally to line up the correct edges
     image[right_start[0]:right_start[0] + face_height, right_start[1]:right_start[1] + face_width] = np.flipud(np.fliplr(image[right_start[0]:right_start[0] + face_height, right_start[1]:right_start[1] + face_width]))
-    
+    image[left_start[0]:left_start[0] + face_height, left_start[1]:left_start[1] + face_width] = np.flipud(image[left_start[0]:left_start[0] + face_height, left_start[1]:left_start[1] + face_width])
+
+
+
     # Rotate the bottom face: Flip the bottom face vertically to match the values
     image[bottom_start[0]:bottom_start[0] + face_height, bottom_start[1]:bottom_start[1] + face_width] = np.flipud(image[bottom_start[0]:bottom_start[0] + face_height, bottom_start[1]:bottom_start[1] + face_width])
 
