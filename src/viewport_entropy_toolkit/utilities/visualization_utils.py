@@ -12,6 +12,19 @@ Functions:
     create_animation: Creates animation from trajectory data.
     save_video: Saves animation as video file.
     generate_color_map: Generates colors for heatmap visualization.
+
+    save_fb_tiling_visualization_glb: Saves a Fibonacci lattice tiling on sphere as a .glb.
+    save_fb_tiling_visualization_image: Saves a Fibonacci lattice tiling on sphere as an image.
+    save_fb_tiling_visualization_video: Saves a Fibonacci lattice tiling on sphere as a video.
+    save_tiling_visualization_glb: Saves an arbitrary tiling on sphere as a .glb.
+    save_tiling_visualization_image: Saves an arbitrary tiling on sphere as an image.
+    save_tiling_visualization_video: Saves an arbitrary tiling on sphere as a video.
+
+    weight_to_color: Maps a weight to a color.
+    create_spherical_tile_patch: Generates an pyvista PolyData object for a spherical patch.
+    save_tiling_visualization_with_weights: Saves an arbitrary tiling on sphere with weights as a .glb.
+    plot_points_on_sphere: Plots a set of Vector points on the sphere.
+    save_heatmap_ERP_image: Saves an ERP heatmap based on tiling weights on an ERP image.
 """
 
 import os
@@ -307,6 +320,86 @@ def save_graph(
     # Close the figure to free up memory
     plt.close()
 
+
+def save_fb_tiling_visualization_glb(
+        tile_count: int,
+        output_dir: Path
+        ):
+    """Saves a video of the tiling on a sphere for fibonacci lattice.
+    
+    Args:
+        entropy_value: The list of entropy values.
+        output_path: Path for output video file.
+        config: Optional visualization configuration.
+    """
+
+     # Grab tile center points and tile boundaries.
+    tile_centers_vectors = generate_fibonacci_lattice(tile_count)
+    tile_boundaries = get_FB_tile_boundaries(tile_count)
+
+    # Convert spherical coordinates to Cartesian coordinates for plotting
+    x = [vec.x for vec in tile_centers_vectors]
+    y = [vec.y for vec in tile_centers_vectors]
+    z = [vec.z for vec in tile_centers_vectors]
+
+    # Extract lines for tile boundary
+    tile_boundary_list = []
+    for boundaries in tile_boundaries.values():
+        for boundary in boundaries:
+            tile_boundary_list.append(boundary)
+
+    pv.start_xvfb()  # Start the virtual framebuffer
+
+    sphere_radius = 1 # Change the radius here
+    sphere_opacity = 0.3  # Change the opacity here
+    sphere = pv.Sphere(radius=sphere_radius)
+    sphere.opacity = sphere_opacity
+    sphere.color = 'grey'
+
+    # Generate points for each arc in the boundaries
+    num_points = 50  # Number of points on the arc
+    t_values = np.linspace(0, 1, num_points)
+
+    arc_points_list = []
+    line_segments = [] #redefine line_segments.
+    line_segment_count = 0 #keep track of segment number.
+
+    for boundary in tile_boundary_list:
+        vec_start, vec_end = boundary
+        arc_points = np.array([spherical_interpolation(vec_start, vec_end, t) for t in t_values])
+        for i in range(len(arc_points) - 1):
+            arc_points_list.extend(arc_points[i:i+2]) #add the two points of the segment.
+            line_segments.append([2, line_segment_count*2, line_segment_count*2+1]) #create a line segment.
+            line_segment_count +=1
+
+    # Create PolyData for lines
+    lines = pv.PolyData(np.array(arc_points_list)) #create the points.
+    lines.lines = np.array(line_segments).flatten() #define the lines.
+
+    # Create PolyData for tile centers
+    points = pv.PolyData(np.column_stack((x, y, z)))
+    points['colors'] = np.array([[255, 0, 0]] * len(x))  # Red points
+
+    # Create plotter
+    plotter = pv.Plotter(off_screen=True)
+    plotter.add_mesh(sphere)
+    plotter.add_mesh(lines, color='black', line_width=2)
+    plotter.add_mesh(points, color='red', point_size=10) #plot tile centers
+
+    plotter.enable_parallel_projection()
+    plotter.show_axes_all()
+    plotter.remove_bounds_axes()
+
+    gltf_file_name = os.path.join(str(output_dir), f'fibonacci_lattice-{tile_count}_tiles.glb')
+
+    try:
+        plotter.export_gltf(gltf_file_name)  # This will export in GLTF format by default
+        print(f"GLTF saved: {gltf_file_name}")
+    except Exception as e:
+        print(f"Error saving GLTF: {e}")
+
+    plotter.close()
+
 def save_fb_tiling_visualization_image(
         tile_count: int,
         output_dir: Path,
@@ -394,85 +487,6 @@ def save_fb_tiling_visualization_image(
         print(f"PNG saved: {png_file_name}")
     except Exception as e:
         print(f"Error saving PNG: {e}")
-
-    plotter.close()
-
-def save_fb_tiling_visualization_glb(
-        tile_count: int,
-        output_dir: Path
-        ):
-    """Saves a video of the tiling on a sphere for fibonacci lattice.
-    
-    Args:
-        entropy_value: The list of entropy values.
-        output_path: Path for output video file.
-        config: Optional visualization configuration.
-    """
-
-     # Grab tile center points and tile boundaries.
-    tile_centers_vectors = generate_fibonacci_lattice(tile_count)
-    tile_boundaries = get_FB_tile_boundaries(tile_count)
-
-    # Convert spherical coordinates to Cartesian coordinates for plotting
-    x = [vec.x for vec in tile_centers_vectors]
-    y = [vec.y for vec in tile_centers_vectors]
-    z = [vec.z for vec in tile_centers_vectors]
-
-    # Extract lines for tile boundary
-    tile_boundary_list = []
-    for boundaries in tile_boundaries.values():
-        for boundary in boundaries:
-            tile_boundary_list.append(boundary)
-
-    pv.start_xvfb()  # Start the virtual framebuffer
-
-    sphere_radius = 1 # Change the radius here
-    sphere_opacity = 0.3  # Change the opacity here
-    sphere = pv.Sphere(radius=sphere_radius)
-    sphere.opacity = sphere_opacity
-    sphere.color = 'grey'
-
-    # Generate points for each arc in the boundaries
-    num_points = 50  # Number of points on the arc
-    t_values = np.linspace(0, 1, num_points)
-
-    arc_points_list = []
-    line_segments = [] #redefine line_segments.
-    line_segment_count = 0 #keep track of segment number.
-
-    for boundary in tile_boundary_list:
-        vec_start, vec_end = boundary
-        arc_points = np.array([spherical_interpolation(vec_start, vec_end, t) for t in t_values])
-        for i in range(len(arc_points) - 1):
-            arc_points_list.extend(arc_points[i:i+2]) #add the two points of the segment.
-            line_segments.append([2, line_segment_count*2, line_segment_count*2+1]) #create a line segment.
-            line_segment_count +=1
-
-    # Create PolyData for lines
-    lines = pv.PolyData(np.array(arc_points_list)) #create the points.
-    lines.lines = np.array(line_segments).flatten() #define the lines.
-
-    # Create PolyData for tile centers
-    points = pv.PolyData(np.column_stack((x, y, z)))
-    points['colors'] = np.array([[255, 0, 0]] * len(x))  # Red points
-
-    # Create plotter
-    plotter = pv.Plotter(off_screen=True)
-    plotter.add_mesh(sphere)
-    plotter.add_mesh(lines, color='black', line_width=2)
-    plotter.add_mesh(points, color='red', point_size=10) #plot tile centers
-
-    plotter.enable_parallel_projection()
-    plotter.show_axes_all()
-    plotter.remove_bounds_axes()
-
-    gltf_file_name = os.path.join(str(output_dir), f'fibonacci_lattice-{tile_count}_tiles.glb')
-
-    try:
-        plotter.export_gltf(gltf_file_name)  # This will export in GLTF format by default
-        print(f"GLTF saved: {gltf_file_name}")
-    except Exception as e:
-        print(f"Error saving GLTF: {e}")
 
     plotter.close()
 
@@ -839,7 +853,7 @@ def weight_to_color(weight: float, min_weight: float, max_weight: float) -> Tupl
     color = colormap(normalized_weight)
     return (color[0], color[1], color[2])
 
-def create_spherical_tile_patch(tile_corners: List[Vector], sphere_radius=1.0, steps=50):
+def create_spherical_tile_patch(tile_corners: List[Vector], sphere_radius=1.0, steps=50) -> pv.PolyData:
     arc_points = []
 
     # Interpolate between each pair of consecutive corner points
@@ -933,7 +947,7 @@ def save_tiling_visualization_with_weights(
 
     plotter.close()
 
-def plot_viewers_on_sphere(
+def plot_points_on_sphere(
     vectors: Dict[str, Vector],
     output_dir: Path,
     output_prefix: str = ""
@@ -942,9 +956,11 @@ def plot_viewers_on_sphere(
     Plots a black sphere with latitude and longitude grid lines and small red dots
     at the positions specified in `vectors`.
 
-    Parameters:
-    - vectors: Dictionary where keys are vector identifiers and values are Vectors
-               representing a point on the sphere.
+    Args:
+        vectors: Dictionary where keys are vector identifiers and values are Vectors
+        representing a point on the sphere.
+        output_dir: The path to the folder to save the file to.
+        output_prefix: A prefix to place before the standard file name.
     """
     import pyvista as pv
     import numpy as np
@@ -1003,3 +1019,62 @@ def plot_viewers_on_sphere(
         print(f"Error saving GLTF: {e}")
 
     plotter.close()
+
+def save_heatmap_ERP_image(
+    tile_weights: Dict[str, int],
+    num_tiles_horizontal: int,
+    num_tiles_vertical: int,
+    output_dir: Path,
+    output_prefix: str = "",
+):
+    """Save a heatmap of ERP tile weights as an image.
+    
+    Args:
+        tile_weights: Dictionary where keys are tile_center identifiers and values are weights.
+        num_tiles_horizontal: The number of tiles horizontally in the ERP.
+        num_tiles_vertical: The number of tiles vertically in the ERP.
+        output_dir: The path to the folder to save the file to.
+        output_prefix: A prefix to place before the standard file name.
+    """
+    
+    # Create a 2D array to store weights (j is vertical, i is horizontal)
+    heatmap = np.zeros((num_tiles_vertical, num_tiles_horizontal))
+
+    for tile_index, weight in tile_weights.items():
+        try:
+            j_str, i_str = tile_index.split("_")  # row (lat), col (lon)
+            j = int(j_str)
+            i = int(i_str)
+        except (ValueError, AttributeError) as e:
+            raise ValueError(f"Invalid tile_index format: '{tile_index}'. Expected format 'j_i' with integers.") from e
+
+
+        # Make sure indices are within bounds
+        if 0 <= j < num_tiles_vertical and 0 <= i < num_tiles_horizontal:
+            heatmap[j, i] = weight
+        else:
+            raise ValueError(f"Invalid tile_index: '{tile_index}'. Tile index was out of bounds.")
+
+    # Normalize the heatmap for better visualization
+    max_val = np.max(heatmap)
+    if max_val > 0:
+        heatmap = heatmap / max_val
+
+    # Flip vertically so that south pole is at the bottom
+    heatmap = np.flipud(heatmap)
+
+    # Create the figure
+    fig, ax = plt.subplots(figsize=(12, 6), dpi=100)
+    cax = ax.imshow(heatmap, cmap=plt.cm.inferno, interpolation='nearest',
+                    extent=[-180, 180, -90, 90], aspect='auto')
+
+    # Hide axes
+    ax.axis('off')
+
+    # Save the image
+    filename = f"{output_prefix}heatmap.png"
+    output_path = os.path.join(output_dir, filename)
+    plt.savefig(output_path, bbox_inches='tight', pad_inches=0)
+    plt.close()
+
+    print(f"ERP heatmap saved to: {output_path}")

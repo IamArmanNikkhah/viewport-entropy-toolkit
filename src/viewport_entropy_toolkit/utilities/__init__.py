@@ -64,6 +64,12 @@ from .visualization_utils import (
     save_fb_tiling_visualization_image,
     save_tiling_visualization_video,
     save_tiling_visualization_image,
+
+    weight_to_color,
+    create_spherical_tile_patch,
+    save_tiling_visualization_with_weights,
+    plot_points_on_sphere,
+    save_heatmap_ERP_image,
 )
 
 __all__ = [
@@ -117,4 +123,10 @@ __all__ = [
     'save_fb_tiling_visualization_image',
     'save_tiling_visualization_video',
     'save_tiling_visualization_image',
+
+    'weight_to_color',
+    'create_spherical_tile_patch',
+    'save_tiling_visualization_with_weights',
+    'plot_points_on_sphere',
+    'save_heatmap_ERP_image',
 ]
