@@ -222,7 +222,7 @@ class SpatialEntropyAnalyzer:
             logger.error(f"Error creating visualization: {str(e)}")
             raise RuntimeError(f"Failed to create visualization: {str(e)}")
     
-    def run_analysis(self, directory: Path, output_prefix: str = "") -> None:
+    def run_analysis(self, input_directory: Path, output_prefix: str = "") -> None:
         """Runs the complete analysis pipeline.
         
         Args:
@@ -234,14 +234,14 @@ class SpatialEntropyAnalyzer:
         """
         try:
             # Process data
-            self.process_directory(directory)
+            self.process_directory(input_directory)
             
             # Compute entropy
             self.compute_entropy()
             
             # Generate base name for outputs
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            base_name = f"{directory.stem}_{output_prefix}_{timestamp}"
+            base_name = f"{input_directory.stem}_{output_prefix}_{timestamp}"
             
             # Create visualization
             self.create_visualization(base_name)

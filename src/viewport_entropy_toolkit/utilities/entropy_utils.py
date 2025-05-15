@@ -355,6 +355,7 @@ def compute_transition_entropy(
 
         # Calculate the transition proportions and cell entropy.
         for transition_vect_key in transition_weight_per_tile[vector_key]:
+            transition_weight = transition_weight_per_tile[vector_key][transition_vect_key]
             transition_proportion = float(transition_weight) / float(total_transition_weight)
             cell_transition_entropy = transition_proportion * np.log2(transition_proportion)
             total_cell_transition_entropy += cell_transition_entropy
